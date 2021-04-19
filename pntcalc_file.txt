@@ -1,0 +1,177 @@
+                           PNTCALC File Format
+                              19 April 20212
+
+This document describes the PNTCALC file format.  For an overview of the
+PNTCALC mechanism, see the PNTCALC documentation file.
+
+
+Syntax
+
+  PNTCALC files are intended to be reasonably readable and editable by
+  humans using ordinary text editor programs.
+
+  PNTCALC files contain lines of ASCII text.  End of lines may be
+  indicated by either a carriage return (CR, code 13), line feed (LF, code
+  10), or a CR-LF combination.  Readers must be able to interpret any of
+  these end of line indications, on a line by line basis.
+
+  Comments
+
+    Lines where the body is any of:
+
+      1 - Empty (0 characters).
+
+      2 - Only blanks (code 32).
+
+      3 - The first non-blank character is "*" (code 66).
+
+    are ignored content-wise, and are collectively referred to as
+    "comment" lines.  Comment lines are intended to aid human readability
+    and understanding.  They have no effect on the data contents of
+    PNTCALC files.
+
+    Comment lines are generally ignored and not mentioned in the remainder
+    of this document.  However, it is legal for zero or more comment lines
+    to be between any two lines, at the start of the file, and at the end
+    of the file.
+
+  Commands and parameters
+
+    Data is specified by commands.  Commands start with the command name
+    keyword, followed by parameters unique to that command.  All keywords,
+    which include command names, are case-insensitive.
+
+    Parameters are separated from the command name and from each other by
+    one or more blanks.
+
+    Individual parameters may be enclosed in quotes ("...") or
+    apostrophies ('...').  This is required if the parameter is a text
+    string that contains any blank, or starts or ends with a quote or
+    apostrohie.  The value of the parameter will be the string enclosed
+    by, but not including the outer quotes or apostrophies.  To indicate a
+    single character of the type used to enclose the string, that
+    character must be doubled in the body of the string.  For example, the
+    following two text parameters have the same value:
+
+      "Don't say ""never""."
+      'Don''t say "never".'
+
+    Integers
+
+      Integer parameters have the format
+
+        <radix>#<+-><digits>.
+
+      RADIX is the number base (radix) in decimal, with the allowed range
+      being 2-36.
+
+      The "<+->" part can be either "+", "-", or be omitted.  This
+      indicates       the sign of the value.  Positive is implied when the
+      sign is omitted.
+
+      DIGITS is the digits of the number in the specified radix.  The
+      normal       digits 0-9 are used for digit values 0 to 9.  The
+      letters A-Z or a-z are used for digit values 10 to 35.  Only digits
+      with values less than the radix are allowed.  Leading zeros are
+      allowed.  A minimum of one digit is required.
+
+      The "<radix>#" part may be omitted, in which case the radix is
+      implied       to be 10 (decimal).
+
+      For example, the following integer parameters all have the decimal
+      value of 249:
+
+        249 +00249 10#249 10#+249 16#F9 2#11111001
+
+    Angles
+
+      Angles have the format
+
+        <degrees>:<minutes>:<seconds>
+
+      Each of DEGREES, MINUTES and SECONDS may have fraction digits.
+      There are 60 minutes in one degree, and 60 seconds in one minute.
+      The final angle expressed above is essentially the sum of all three
+      fields, scaled appropriately.  Omitted MINUTES or SECONDS are
+      interpreted as having a value of 0.  A colon may be omitted if all
+      fields to its right are also omitted.  The DEGREES field is required.
+
+      Angles are interpreted as they are with compass readings, with
+      increasing angle progressively more clockwise when viewed from top
+      (+Z axis).  This is also typical of angle readings from instruments
+      like transits.  Angles may be negative to specify going left from
+      the zero reference.
+
+      The following examples all specify 2 1/4 degrees to the right of the
+      zero reference angle:
+
+        2.25
+        2.25:
+        2.25::
+        2:15:0
+        2:15
+        2.2:3
+        2.2:2.5:30
+
+  Hierarchy
+
+    The data in PNTCALC files is hierarchical.  The hierarchy is indicated
+    by the indentation level (the number of blanks before the first
+    non-blank character) of each line.  Top level data has 0 indentation
+    (the first non-blank is in column 1).  Each successive level down in
+    the hierarchy has an additional 2 characters of indentation.  For
+    example, data one level below the top starts in column 3, two levels
+    down in column 5, etc.
+
+    All commands must be indented a multiple of 2 characters.  A command
+    starting in column 4, for example, is illegal.
+
+    There are no explicit commands to start and end subordinate blocks of
+    data.  Data hierarchy is solely and ridgidly defined by the
+    indentation level of each command.  A subordinate block is ended when
+    a command at a higher level is encountered.
+
+
+Commands
+
+  POINT name
+
+    Start a subordinate block for the indicated point.  If no point of
+    name NAME exists, then it is created and initialized to empty.
+    Otherwise, an existing point can be modified.
+
+    AT x y [z]
+
+      Specifies an absolute location for the point.  When only X and Y are
+      supplied, then they are taken as the 2D components of the
+      coordinate.  In that case, the existing Z coordinate is not altered.
+      It is an error if the absolue coordinate was previously specified.
+
+    ANGREF angle
+
+      Specifies the 0 reference angle for all angle measurements from this
+      point.  It is an error if this zero reference angle was previously
+      set for this point.
+
+      The reference angle is relative to the +Y axis, with positive values
+      more clockwise when viewed from the +Z axis.
+
+    ANGLE name angle [ref]
+
+      Indicates an angle measurement from this point to the point NAME.
+      If point NAME does not already exist, it is created and initialized
+      to empty.  ANGLE is the angle measurement relative to the 0
+      reference angle for this point.
+
+      The optional keyword REF indicates that this measurement also
+      implicitly provides the zero reference angle.
+
+    DISTXY name dist
+
+      Indicates a measured distance between this point and the point of
+      name NAME.  DIST is the distance projected onto the XY plane.  If
+      point NAME does not already exist, it is created and initialized to
+      empty.
+
+      Since distances are reciprocal, the distance measurement is added to
+      both the current point and the point NAME.

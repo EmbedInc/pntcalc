@@ -15,3 +15,6 @@ call src_pas %srcdir% %libname%_pnt
 
 call src_lib %srcdir% %libname%
 call src_msg %srcdir% %libname%
+
+call src_doc pntcalc
+call src_doc pntcalc_file

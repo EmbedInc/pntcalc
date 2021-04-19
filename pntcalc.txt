@@ -1,0 +1,8 @@
+                              PNTCALC System
+                               19 April 2021
+
+The PNTCALC system calculates absolute coordinates of points from various
+relative distance and angle measurements.  Such relative measurements
+result from the use of a tape measure and a transit, for example.
+
+--- Need more detail here. ---
