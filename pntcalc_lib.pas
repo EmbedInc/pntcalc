@@ -18,6 +18,8 @@ procedure pntcalc_lib_init (           {init lib use state to default or benign}
 
 begin
   ptc.mem_p := nil;
+  ptc.pnt_p := nil;
+  ptc.pnt_last_p := nil;
   end;
 {
 ********************************************************************************
