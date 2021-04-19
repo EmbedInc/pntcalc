@@ -59,3 +59,18 @@ procedure pntcalc_lib_new (            {create a new use of this library}
   out     ptc: pntcalc_t;              {returned initialized library use state}
   out     stat: sys_err_t);            {completion status}
   val_param; extern;
+
+procedure pntcalc_pnt_add (            {create and init point, add to end of points list}
+  in out  ptc: pntcalc_t;              {library use state}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the new point}
+  val_param; extern;
+
+procedure pntcalc_pnt_link (           {link point to end of points list}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t);       {the point to add}
+  val_param; extern;
+
+procedure pntcalc_pnt_new (            {create and initialize new point, not added to list}
+  in out  ptc: pntcalc_t;              {library use state}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the new point}
+  val_param; extern;
