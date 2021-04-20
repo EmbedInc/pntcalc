@@ -156,7 +156,7 @@ Commands
       The reference angle is relative to the +Y axis, with positive values
       more clockwise when viewed from the +Z axis.
 
-    ANGLE name angle [ref]
+    ANGLE name angle [REF]
 
       Indicates an angle measurement from this point to the point NAME.
       If point NAME does not already exist, it is created and initialized

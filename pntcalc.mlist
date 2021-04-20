@@ -1,3 +1,4 @@
 pntcalc_lib.obj
 pntcalc_meas.obj
 pntcalc_pnt.obj
+pntcalc_read.obj

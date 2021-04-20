@@ -119,3 +119,9 @@ procedure pntcalc_pnt_new (            {create and initialize new point, not add
   in out  ptc: pntcalc_t;              {library use state}
   out     pnt_p: pntcalc_point_p_t);   {returned pointer to the new point}
   val_param; extern;
+
+procedure pntcalc_read_file (          {read input from file}
+  in out  ptc: pntcalc_t;              {library use state}
+  in      fnam: univ string_var_arg_t; {file name}
+  out     stat: sys_err_t);            {completion status}
+  val_param; extern;
