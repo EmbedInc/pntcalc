@@ -68,23 +68,26 @@ begin
 {
 ********************************************************************************
 *
-*   Subroutine PNTCALC_MEAS_SET_ANG (PTC, MEAS, PNT, ANG)
+*   Subroutine PNTCALC_MEAS_SET_ANG (PTC, MEAS, PNT, ANG, REF)
 *
 *   Set the measurement MEAS to be the angle to point PNT.  ANG is the angle in
 *   radians, relative to the 0 angle of the point the measurement was taken
-*   from.
+*   from.  REF indicates to use this angle measurement to define the 0 reference
+*   angle for the point the measurement is from.
 }
 procedure pntcalc_meas_set_ang (       {set measurement of angle to another point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  meas: pntcalc_meas_t;        {the measurement to set}
   var     pnt: pntcalc_point_t;        {point to which angle was measured}
-  in      ang: real);                  {angle, radians, rel to PNT 0 ref ang}
+  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ref: boolean);               {use this measurement to get reference angle}
   val_param;
 
 begin
   meas.measty := pntcalc_measty_ang_k; {this is an angle measurement}
   meas.ang_pnt_p := addr(pnt);         {identify the remote point}
   meas.ang_ang := ang;                 {save the angle value}
+  meas.ang_ref := ref;                 {use to make reference angle ?}
   end;
 {
 ********************************************************************************
@@ -110,17 +113,19 @@ begin
 {
 ********************************************************************************
 *
-*   Subroutine PTNCALC_MEAS_ADD_ANG (PTC, PNT, PNT2, ANG)
+*   Subroutine PTNCALC_MEAS_ADD_ANG (PTC, PNT, PNT2, ANG, REF)
 *
 *   Add and angle measurement to the point PNT.  PNT2 is the remote point to
 *   which the angle was measured.  ANG is in radians, and relative to the 0
-*   angle of point PNT.
+*   angle of point PNT.  REF indicates to use this angle measurement to define
+*   the 0 reference angle for the point the measurement is from.
 }
 procedure pntcalc_meas_add_ang (       {add angle measurement from another point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t;        {point to add the measurement to}
   var     pnt2: pntcalc_point_t;       {point to which angle is measured}
-  in      ang: real);                  {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ref: boolean);               {use this measurement to get reference angle}
   val_param;
 
 var
@@ -128,7 +133,7 @@ var
 
 begin
   pntcalc_meas_new (ptc, meas_p);      {create and init a new measurement descriptor}
-  pntcalc_meas_set_ang (ptc, meas_p^, pnt2, ang); {fill in the measurement}
+  pntcalc_meas_set_ang (ptc, meas_p^, pnt2, ang, ref); {fill in the measurement}
   pntcalc_meas_link (ptc, pnt, meas_p^); {add the measurment to the point}
   end;
 {

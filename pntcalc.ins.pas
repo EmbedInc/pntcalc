@@ -72,7 +72,8 @@ procedure pntcalc_meas_add_ang (       {add angle measurement from another point
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t;        {point to add the measurement to}
   var     pnt2: pntcalc_point_t;       {point to which angle is measured}
-  in      ang: real);                  {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ref: boolean);               {use this measurement to get reference angle}
   val_param; extern;
 
 procedure pntcalc_meas_add_distxy (    {add distance in XY plane to another point}
@@ -96,7 +97,8 @@ procedure pntcalc_meas_set_ang (       {set measurement of angle to another poin
   in out  ptc: pntcalc_t;              {library use state}
   in out  meas: pntcalc_meas_t;        {the measurement to set}
   var     pnt: pntcalc_point_t;        {point to which angle was measured}
-  in      ang: real);                  {angle, radians, rel to PNT 0 ref ang}
+  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ref: boolean);               {use this measurement to get reference angle}
   val_param; extern;
 
 procedure pntcalc_meas_set_distxy (    {set measurement of XY plane distance to a point}
