@@ -138,7 +138,8 @@ Commands
 
     Start a subordinate block for the indicated point.  If no point of
     name NAME exists, then it is created and initialized to empty.
-    Otherwise, an existing point can be modified.
+    Otherwise, an existing point can be modified.  Point names are
+    case-sensitive.
 
     AT x y [z]
 

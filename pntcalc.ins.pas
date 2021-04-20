@@ -17,9 +17,10 @@ type
     next_p: pntcalc_meas_p_t;          {to next measurement for this point}
     measty: pntcalc_measty_k_t;        {the type of this measurement}
     case pntcalc_measty_k_t of
-pntcalc_measty_ang_k: (                {angle from another point}
-      ang_pnt_p: pntcalc_point_p_t;    {the other point the angle is from}
-      ang_ang: real;                   {angle from the other point, relative to its ANG0}
+pntcalc_measty_ang_k: (                {angle to another point}
+      ang_pnt_p: pntcalc_point_p_t;    {the other point the angle is to}
+      ang_ang: real;                   {angle to the other point, relative to this point's ANG0}
+      ang_ref: boolean;                {the angle to this point defines the reference angle}
       );
 pntcalc_measty_distxy_k: (             {XY plane distance from to point}
       distxy_pnt_p: pntcalc_point_p_t; {the other point the distance is to}
