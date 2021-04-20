@@ -4,6 +4,8 @@ module pntcalc_pnt;
 define pntcalc_pnt_new;
 define pntcalc_pnt_link;
 define pntcalc_pnt_add;
+define pntcalc_pnt_find;
+define pntcalc_pnt_get;
 %include 'pntcalc2.ins.pas';
 {
 ********************************************************************************
@@ -73,4 +75,46 @@ procedure pntcalc_pnt_add (            {create and init point, add to end of poi
 begin
   pntcalc_pnt_new (ptc, pnt_p);        {create and init the new point}
   pntcalc_pnt_link (ptc, pnt_p^);      {add it to the end of the points list}
+  end;
+{
+********************************************************************************
+*
+*   Subroutine PNTCALC_PNT_FIND (PTC, NAME, PNT_P)
+*
+*   Find the existing point of name NAME, and return PNT_P pointing to it.
+*   PNT_P is returned NIL if no such point currently exists.
+}
+procedure pntcalc_pnt_find (           {find existing point}
+  in out  ptc: pntcalc_t;              {library use state}
+  in      name: univ string_var_arg_t; {name of point to find, case sensitive}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the point, NIL on not found}
+  val_param;
+
+begin
+  pnt_p := ptc.pnt_p;                  {init to first list entry}
+  while pnt_p <> nil do begin          {scan the list}
+    if string_equal (pnt_p^.name, name) then return; {found the point ?}
+    pnt_p := pnt_p^.next_p;            {advance to next point in the list}
+    end;                               {back to check this new point}
+  end;
+{
+********************************************************************************
+*
+*   Subroutine PNTCALC_PNT_GET (PTC, NAME, PNT_P)
+*
+*   Return PNT_P pointing to the point with name NAME.  The point is created, if
+*   not previously existing.
+}
+procedure pntcalc_pnt_get (            {get point by name, create new if not existing}
+  in out  ptc: pntcalc_t;              {library use state}
+  in      name: univ string_var_arg_t; {name of point to get, case sensitive}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the point}
+  val_param;
+
+begin
+  pntcalc_pnt_find (ptc, name, pnt_p); {look for existing point}
+  if pnt_p <> nil then return;         {found existing point ?}
+
+  pntcalc_pnt_add (ptc, pnt_p);        {create a new blank point, add it to the list}
+  string_copy (name, pnt_p^.name);     {set the name of this new point}
   end;

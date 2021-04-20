@@ -110,6 +110,18 @@ procedure pntcalc_pnt_add (            {create and init point, add to end of poi
   out     pnt_p: pntcalc_point_p_t);   {returned pointer to the new point}
   val_param; extern;
 
+procedure pntcalc_pnt_find (           {find existing point}
+  in out  ptc: pntcalc_t;              {library use state}
+  in      name: univ string_var_arg_t; {name of point to find, case sensitive}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the point, NIL on not found}
+  val_param; extern;
+
+procedure pntcalc_pnt_get (            {get point by name, create new if not existing}
+  in out  ptc: pntcalc_t;              {library use state}
+  in      name: univ string_var_arg_t; {name of point to get, case sensitive}
+  out     pnt_p: pntcalc_point_p_t);   {returned pointer to the point}
+  val_param; extern;
+
 procedure pntcalc_pnt_link (           {link point to end of points list}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t);       {the point to add}
