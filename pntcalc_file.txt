@@ -162,7 +162,7 @@ Commands
       Indicates an angle measurement from this point to the point NAME.
       If point NAME does not already exist, it is created and initialized
       to empty.  ANGLE is the angle measurement relative to the 0
-      reference angle for this point.
+      reference angle for the point named in the POINT command.
 
       The optional keyword REF indicates that this measurement also
       implicitly provides the zero reference angle.

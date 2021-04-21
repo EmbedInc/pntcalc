@@ -2,6 +2,9 @@
 }
 const
   pntcalc_subsys_k = -74;              {subsystem ID for this library}
+  pntcalc_stat_prevcoor_k = 1;         {full absolute coordinate already set}
+  pntcalc_stat_prevxy_k = 2;           {absolute XY coordinate already set}
+  pntcalc_stat_prevrefa_k = 3;         {reference angle already set}
 
 type
   pntcalc_point_p_t = ^pntcalc_point_t;
@@ -31,7 +34,7 @@ pntcalc_measty_distxy_k: (             {XY plane distance from to point}
   pntcalc_pntflg_k_t = (               {individual modifier flags for points}
     pntcalc_pntflg_xy_k,               {XY coordinate is set}
     pntcalc_pntflg_coor_k,             {full coordinate is set}
-    pntcalc_ang0_k);                   {0 ref for angle measurments is set}
+    pntcalc_pntflg_ang0_k);            {0 ref for angle measurments is set}
   pntcalc_pntflg_t = set of pntcalc_pntflg_k_t;
 
   pntcalc_point_t = record             {data about one point}
