@@ -52,7 +52,7 @@ pntcalc_measty_distxy_k: (             {XY plane distance from to point}
     pnt_last_p: pntcalc_point_p_t;     {to last point in list}
     end;
 {
-*   Subroutines and function.
+*   Subroutines and functions.
 }
 procedure pntcalc_lib_end (            {end a use of the library, deallocate resources}
   in out  ptc: pntcalc_t;              {library use state, returned invalid}
@@ -142,4 +142,21 @@ procedure pntcalc_read_file (          {read input from file}
   in out  ptc: pntcalc_t;              {library use state}
   in      fnam: univ string_var_arg_t; {file name}
   out     stat: sys_err_t);            {completion status}
+  val_param; extern;
+
+procedure pntcalc_show_meas (          {show data of one measurement to STDOUT}
+  in      meas: pntcalc_meas_t;        {the measurement to show}
+  in      indent: sys_int_machine_t;   {number of spaces to indent top level lines}
+  in      sub: boolean);               {show sub-level information}
+  val_param; extern;
+
+procedure pntcalc_show_point (         {show data of one point to STDOUT}
+  in      pnt: pntcalc_point_t;        {the point to show}
+  in      indent: sys_int_machine_t;   {number of spaces to indent top level lines}
+  in      sub: boolean);               {show sub-level information}
+  val_param; extern;
+
+procedure pntcalc_show (               {show all the data in a lib usage}
+  in      ptc: pntcalc_t;              {library use state to show data of}
+  in      indent: sys_int_machine_t);  {number of spaces to indent top level lines}
   val_param; extern;
