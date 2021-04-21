@@ -1,9 +1,10 @@
                            PNTCALC File Format
-                              19 April 20212
+                              21 April 20212
 
 This document describes the PNTCALC file format.  For an overview of the
 PNTCALC mechanism, see the PNTCALC documentation file.
 
+PNTCALC files have names that end in ".pnts".
 
 Syntax
 

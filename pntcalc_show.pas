@@ -121,6 +121,7 @@ begin
   n := 0;                              {init number of points found}
   pnt_p := ptc.pnt_p;                  {init to first point in list}
   while pnt_p <> nil do begin          {scan the list of points}
+    n := n + 1;                        {count one more point found}
     pntcalc_show_point (pnt_p^, indent, true);
     pnt_p := pnt_p^.next_p;            {to next point in list}
     end;                               {back to show this new point}

@@ -3,6 +3,7 @@
 module pntcalc_read;
 define pntcalc_read_file;
 %include 'pntcalc2.ins.pas';
+%include 'hier.ins.pas';
 {
 ********************************************************************************
 *
@@ -270,7 +271,7 @@ label
 
 begin
   hier_read_open (                     {init for reading hierarcy data from the file}
-    fnam, '',                          {file name and suffixes}
+    fnam, '.pnts',                     {file name and suffixes}
     rd,                                {returned hierarchy reading state}
     stat);
   if sys_error(stat) then return;

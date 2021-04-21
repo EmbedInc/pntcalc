@@ -6,5 +6,4 @@
 %include 'string.ins.pas';
 %include 'file.ins.pas';
 %include 'vect.ins.pas';
-%include 'hier.ins.pas';
 %include 'pntcalc.ins.pas';

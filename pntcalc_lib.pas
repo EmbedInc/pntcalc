@@ -1,8 +1,8 @@
 {   High level library management.
 }
 module pntcalc;
-define pntcalc_new;
-define pntcalc_end;
+define pntcalc_lib_new;
+define pntcalc_lib_end;
 %include 'pntcalc2.ins.pas';
 {
 ********************************************************************************
