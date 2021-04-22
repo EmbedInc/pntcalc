@@ -34,7 +34,19 @@ begin
 
   ind := indent + 2;                   {make indentation one level down}
 
-  if pntcalc_pntflg_xy_k in pnt.flags then begin {some part of coordinate is known ?}
+  if pntcalc_pntflg_nearxy_k in pnt.flags then begin {some part of near point is known ?}
+    string_f_fp_free (tk, pnt.near.x, 5);
+    write ('':ind, 'near (', tk.str:tk.len);
+    string_f_fp_free (tk, pnt.near.y, 5);
+    write (', ', tk.str:tk.len);
+    if pntcalc_pntflg_nearxyz_k in pnt.flags then begin {Z is also known ?}
+      string_f_fp_free (tk, pnt.near.y, 5);
+      write (', ', tk.str:tk.len);
+      end;
+    writeln (')');
+    end;
+
+  if pntcalc_pntflg_xy_k in pnt.flags then begin {some part of abs coordinate is known ?}
     string_f_fp_free (tk, pnt.coor.x, 5);
     write ('':ind, 'at (', tk.str:tk.len);
     string_f_fp_free (tk, pnt.coor.y, 5);

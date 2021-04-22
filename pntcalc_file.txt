@@ -1,5 +1,5 @@
                            PNTCALC File Format
-                              21 April 20212
+                              22 April 20212
 
 This document describes the PNTCALC file format.  For an overview of the
 PNTCALC mechanism, see the PNTCALC documentation file.
@@ -148,6 +148,21 @@ Commands
       supplied, then they are taken as the 2D components of the
       coordinate.  In that case, the existing Z coordinate is not altered.
       It is an error if the absolue coordinate was previously specified.
+
+    NEAR x y [z]
+
+      Specifies an approximate location for the point.  As with the AT
+      subcommand (above), this can be specified in 2D or 3D.
+
+      This information is used when measurements constrain the location of
+      the point to a small number of possibilities.  In that case, the
+      location closest to the NEAR point will be chosen.
+
+      For example, if points A and B are known, and the distances to point
+      C are known, then there acan be two possible locations for point C.
+      Without NEAR specified, the location of point C will be considered
+      undefined.  With NEAR, the location of point C will be set to the
+      one possibility nearest to the NEAR point.
 
     ANGREF angle
 

@@ -7,6 +7,50 @@ define pntcalc_read_file;
 {
 ********************************************************************************
 *
+*   Local subroutine GET_COOR (RD, COOR, Z, STAT)
+*
+*   Read a coordinate that can be either 2D (X and Y) or 3D (X, Y, and Z).  The
+*   coordinate is returned in COOR.  Z is set to TRUE if a Z component was
+*   specified.  If not, Z is set to false and the Z component of COOR is not
+*   altered.  COOR is not altered when returning with error.
+}
+procedure get_coor (                   {get XY or XYZ coordinate}
+  in out  rd: hier_read_t;             {hierarchy reading state}
+  out     coor: vect_3d_t;             {returned coordinate}
+  out     z: boolean;                  {Z coordinate was provided}
+  in out  stat: sys_err_t);            {completion status, initialized to no err}
+  val_param; internal;
+
+var
+  cx, cy, cz: real;                    {coordinate components}
+
+begin
+  hier_read_fp (rd, cx, stat);         {get X component}
+  if sys_error(stat) then return;
+
+  hier_read_fp (rd, cy, stat);         {get Y component}
+  if sys_error(stat) then return;
+
+  z := false;                          {init to Z component not supplied}
+  hier_read_fp (rd, cz, stat);         {try to get Z coordinate}
+  if sys_error(stat)
+    then begin                         {didn't get Z coordinate}
+      if not hier_check_noparm (stat) then return; {other than no parameter error ?}
+      end
+    else begin                         {got Z coordinate}
+      z := true;                       {indicate Z coordinate was supplied}
+      end
+    ;
+
+  coor.x := cx;                        {return the result}
+  coor.y := cy;
+  if z then begin
+    coor.z := cz;
+    end;
+  end;
+{
+********************************************************************************
+*
 *   Local subroutine CMD_POINT_AT (PTC, RD, PNT, STAT)
 *
 *   Process a POINT > AT command.  PNT is the point indicated by the POINT
@@ -20,7 +64,6 @@ procedure cmd_point_at (               {process command POINT > AT}
   val_param; internal;
 
 var
-  x, y, z: real;                       {coordinates}
   using_z: boolean;                    {Z component of coordinate is in use}
 
 begin
@@ -35,33 +78,49 @@ begin
     return;
     end;
 
-  hier_read_fp (rd, x, stat);          {get X coordinate}
+  get_coor (rd, pnt.coor, using_z, stat); {get the 2D or 3D coordinate}
   if sys_error(stat) then return;
 
-  hier_read_fp (rd, y, stat);          {get Y coordinate}
-  if sys_error(stat) then return;
+  if not hier_read_eol (rd, stat) then return; {verify end of command line}
 
-  using_z := false;                    {init to Z coordinate not supplied}
-  hier_read_fp (rd, z, stat);          {try to get Z coordinate}
-  if sys_error(stat)
-    then begin                         {didn't get Z coordinate}
-      if not hier_check_noparm (stat) then return; {other than no Z coordinate ?}
-      end
-    else begin                         {got Z coordinate}
-      using_z := true;
-      if not hier_read_eol (rd, stat)  {verify end of command line}
-        then return;
-      end
-    ;
-
-  pnt.coor.x := x;                     {set the XY components of the coordinate}
-  pnt.coor.y := y;
   pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k];
-
-  if using_z then begin                {set the Z component also ?}
-    pnt.coor.z := z;
+  if using_z then begin                {Z component was supplied ?}
     pnt.flags := pnt.flags + [pntcalc_pntflg_coor_k];
     end;
+  end;
+{
+********************************************************************************
+*
+*   Local subroutine CMD_POINT_NEAR (PTC, RD, PNT, STAT)
+*
+*   Process a POINT > NEAR command.  PNT is the point indicated by the POINT
+*   command.  The keyword of the NEAR command has just been read.
+}
+procedure cmd_point_near (             {process command POINT > NEAR}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  rd: hier_read_t;             {hierarchy reading state}
+  in out  pnt: pntcalc_point_t;        {the point being modified}
+  in out  stat: sys_err_t);            {completion status, initialized to no err}
+  val_param; internal;
+
+var
+  using_z: boolean;                    {Z component of coordinate is in use}
+
+begin
+  get_coor (rd, pnt.near, using_z, stat); {get the 2D or 3D coordinate}
+  if sys_error(stat) then return;
+
+  if not hier_read_eol (rd, stat) then return; {verify end of command line}
+
+  pnt.flags := pnt.flags + [pntcalc_pntflg_nearxy_k];
+  if using_z
+    then begin                         {full XYZ was given}
+      pnt.flags := pnt.flags + [pntcalc_pntflg_nearxyz_k];
+      end
+    else begin                         {only XY was given}
+      pnt.flags := pnt.flags - [pntcalc_pntflg_nearxyz_k];
+      end
+    ;
   end;
 {
 ********************************************************************************
@@ -215,22 +274,26 @@ begin
   hier_read_block_start (rd);          {down into POINT command block}
   while hier_read_line (rd, stat) do begin {back here each new subcommand}
     case hier_read_keyw_pick (rd,      {which POINT subcommand ?}
-      'AT ANGREF ANGLE DISTXY',
+      'AT NEAR ANGREF ANGLE DISTXY',
       stat) of
 
 1:    begin                            {AT x y [z]}
         cmd_point_at (ptc, rd, pnt_p^, stat);
         end;
 
-2:    begin                            {ANGREF angle}
+2:    begin                            {NEAR x y [z]}
+        cmd_point_near (ptc, rd, pnt_p^, stat);
+        end;
+
+3:    begin                            {ANGREF angle}
         cmd_point_angref (ptc, rd, pnt_p^, stat);
         end;
 
-3:    begin                            {ANGLE name angle [REF]}
+4:    begin                            {ANGLE name angle [REF]}
         cmd_point_angle (ptc, rd, pnt_p^, stat);
         end;
 
-4:    begin                            {DISTXY name dist}
+5:    begin                            {DISTXY name dist}
         cmd_point_distxy (ptc, rd, pnt_p^, stat);
         end;
 

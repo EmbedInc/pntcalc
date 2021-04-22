@@ -31,6 +31,9 @@ begin
   pnt_p^.coor.x := 0.0;
   pnt_p^.coor.y := 0.0;
   pnt_p^.coor.z := 0.0;
+  pnt_p^.near.x := 0.0;
+  pnt_p^.near.y := 0.0;
+  pnt_p^.near.z := 0.0;
   pnt_p^.ang0 := 0.0;
   pnt_p^.flags := [];
   end;

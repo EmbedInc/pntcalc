@@ -39,6 +39,8 @@ pntcalc_measty_distxy_k: (             {XY plane distance from to point}
   pntcalc_pntflg_k_t = (               {individual modifier flags for points}
     pntcalc_pntflg_xy_k,               {XY coordinate is set}
     pntcalc_pntflg_coor_k,             {full coordinate is set}
+    pntcalc_pntflg_nearxy_k,           {XY of NEAR filled in}
+    pntcalc_pntflg_nearxyz_k,          {XYZ of NEAR filled in}
     pntcalc_pntflg_ang0_k);            {0 ref for angle measurments is set}
   pntcalc_pntflg_t = set of pntcalc_pntflg_k_t;
 
@@ -47,6 +49,7 @@ pntcalc_measty_distxy_k: (             {XY plane distance from to point}
     name: string_var32_t;              {point name, for user interactions}
     meas_p: pntcalc_meas_p_t;          {to list of measurements for this point}
     coor: vect_3d_t;                   {absolute coordinate}
+    near: vect_3d_t;                   {coordinate that this point is near to}
     ang0: real;                        {0 reference for angle measurements from this point}
     flags: pntcalc_pntflg_t;           {set of modifier flags}
     end;
