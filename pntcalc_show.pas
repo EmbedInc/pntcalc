@@ -81,7 +81,7 @@ begin
   case meas.measty of                  {what kind of measurement is this ?}
 
 pntcalc_measty_ang_k: begin            {angle to another point}
-      string_f_fp_free (tk, meas.ang_ang * rad_deg, 5);
+      string_f_fp_ftn (tk, meas.ang_ang * rad_deg, 7, 2);
       write (tk.str:tk.len, ' deg to point "',
         meas.ang_pnt_p^.name.str:meas.ang_pnt_p^.name.len, '"');
       if meas.ang_ref then begin
