@@ -118,7 +118,6 @@ var
   name: string_var32_t;                {name of point angle is measured to}
   ref: boolean;                        {use this measurement to determine reference angle}
   rpnt_p: pntcalc_point_p_t;           {pointer to remote point angle measured to}
-  meas_p: pntcalc_meas_p_t;            {pointer to the new measurement}
 
 begin
   name.max := size_char(name.str);     {init local var string}
@@ -146,12 +145,7 @@ otherwise                              {bad keyword}
 *   Process the command.  The variables NAME, ANGLE, and REF are set.
 }
   pntcalc_pnt_get (ptc, name, rpnt_p); {get pointer to the remote point}
-
-  pntcalc_meas_add (ptc, pnt, meas_p); {add new blank measurement to parent point}
-  meas_p^.measty := pntcalc_measty_ang_k; {this is an angle measurement}
-  meas_p^.ang_pnt_p := rpnt_p;         {identify the remote point}
-  meas_p^.ang_ang := ang;              {the measured angle}
-  meas_p^.ang_ref := ref;              {whether to use this measurement for ref angle}
+  pntcalc_meas_add_ang (ptc, pnt, rpnt_p^, ang, ref); {log the measurements}
   end;
 {
 ********************************************************************************
@@ -175,7 +169,6 @@ var
   name: string_var32_t;                {name of point angle is measured to}
   dist: real;                          {the measured distance}
   rpnt_p: pntcalc_point_p_t;           {pointer to remote point angle measured to}
-  meas_p: pntcalc_meas_p_t;            {pointer to the new measurement}
 
 begin
   name.max := size_char(name.str);     {init local var string}
@@ -190,14 +183,10 @@ begin
 
   if not hier_read_eol (rd, stat) then return; {nothing more allowed on command line}
 {
-*   Process the command.  The variables NAME, ANGLE, and REF are set.
+*   Process the command.  The variables NAME and DIST are all set.
 }
   pntcalc_pnt_get (ptc, name, rpnt_p); {get pointer to the remote point}
-
-  pntcalc_meas_add (ptc, pnt, meas_p); {add new blank measurement to parent point}
-  meas_p^.measty := pntcalc_measty_distxy_k; {this is XY distance measurement}
-  meas_p^.distxy_pnt_p := rpnt_p;      {identify the remote point}
-  meas_p^.distxy_dist := dist;         {the measured distance}
+  pntcalc_meas_add_distxy (ptc, pnt, rpnt_p^, dist);
   end;
 {
 ********************************************************************************

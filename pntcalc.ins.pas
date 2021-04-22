@@ -11,7 +11,8 @@ type
 
   pntcalc_measty_k_t = (               {different types of measurements for resolving points}
     pntcalc_measty_none_k,             {no measurement, not filled in, not used, etc}
-    pntcalc_measty_ang_k,              {angle from another point, in XY plane}
+    pntcalc_measty_angt_k,             {angle to another point, in XY plane}
+    pntcalc_measty_angf_k,             {angle from another point, in XY plane}
     pntcalc_measty_distxy_k);          {distance to another point, in XY plane}
   pntcalc_measty_t = set of pntcalc_measty_k_t;
 
@@ -20,10 +21,14 @@ type
     next_p: pntcalc_meas_p_t;          {to next measurement for this point}
     measty: pntcalc_measty_k_t;        {the type of this measurement}
     case pntcalc_measty_k_t of
-pntcalc_measty_ang_k: (                {angle to another point}
-      ang_pnt_p: pntcalc_point_p_t;    {the other point the angle is to}
-      ang_ang: real;                   {angle to the other point, relative to this point's ANG0}
-      ang_ref: boolean;                {the angle to this point defines the reference angle}
+pntcalc_measty_angt_k: (               {angle to another point}
+      angt_pnt_p: pntcalc_point_p_t;   {the other point the angle is to}
+      angt_ang: real;                  {radians to the other point, relative to this point's ANG0}
+      angt_ref: boolean;               {the angle to this point defines the reference angle}
+      );
+pntcalc_measty_angf_k: (               {angle from another point}
+      angf_pnt_p: pntcalc_point_p_t;   {the other point the angle is from}
+      angf_ang: real;                  {radian measured from remote point, relative to ref angle}
       );
 pntcalc_measty_distxy_k: (             {XY plane distance from to point}
       distxy_pnt_p: pntcalc_point_p_t; {the other point the distance is to}
@@ -65,17 +70,11 @@ procedure pntcalc_lib_new (            {create a new use of this library}
   out     stat: sys_err_t);            {completion status}
   val_param; extern;
 
-procedure pntcalc_meas_add (           {create and init measurement, add to point}
-  in out  ptc: pntcalc_t;              {library use state}
-  in out  pnt: pntcalc_point_t;        {point to add the measurement to}
-  out     meas_p: pntcalc_meas_p_t);   {returned pointer to the new measurement}
-  val_param; extern;
-
 procedure pntcalc_meas_add_ang (       {add angle measurement from another point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t;        {point to add the measurement to}
   var     pnt2: pntcalc_point_t;       {point to which angle is measured}
-  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
+  in      ang: real;                   {angle to PNT2, radians, rel to PNT ref ang}
   in      ref: boolean);               {use this measurement to get reference angle}
   val_param; extern;
 
@@ -83,32 +82,6 @@ procedure pntcalc_meas_add_distxy (    {add distance in XY plane to another poin
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt, pnt2: pntcalc_point_t;  {points distance measured between}
   in      dist: real);                 {distance between the points}
-  val_param; extern;
-
-procedure pntcalc_meas_link (          {link measurement to a particular point}
-  in out  ptc: pntcalc_t;              {library use state}
-  in out  pnt: pntcalc_point_t;        {point to link the measurement to}
-  in out  meas: pntcalc_meas_t);       {measurement to add to the point}
-  val_param; extern;
-
-procedure pntcalc_meas_new (           {create and initialize new measurement descriptor}
-  in out  ptc: pntcalc_t;              {library use state}
-  out     meas_p: pntcalc_meas_p_t);   {returned pointer to the new measurement}
-  val_param; extern;
-
-procedure pntcalc_meas_set_ang (       {set measurement of angle to another point}
-  in out  ptc: pntcalc_t;              {library use state}
-  in out  meas: pntcalc_meas_t;        {the measurement to set}
-  var     pnt: pntcalc_point_t;        {point to which angle was measured}
-  in      ang: real;                   {angle to PNT2, radians, rel to PNT 0 ref ang}
-  in      ref: boolean);               {use this measurement to get reference angle}
-  val_param; extern;
-
-procedure pntcalc_meas_set_distxy (    {set measurement of XY plane distance to a point}
-  in out  ptc: pntcalc_t;              {library use state}
-  in out  meas: pntcalc_meas_t;        {the measurement to set}
-  var     pnt: pntcalc_point_t;        {point to which distance was measured}
-  in      dist: real);                 {distance to the remote point}
   val_param; extern;
 
 procedure pntcalc_pnt_add (            {create and init point, add to end of points list}

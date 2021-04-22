@@ -80,13 +80,19 @@ begin
   write ('':indent, 'Measured ');
   case meas.measty of                  {what kind of measurement is this ?}
 
-pntcalc_measty_ang_k: begin            {angle to another point}
-      string_f_fp_ftn (tk, meas.ang_ang * rad_deg, 7, 2);
+pntcalc_measty_angt_k: begin           {angle to another point}
+      string_f_fp_ftn (tk, meas.angt_ang * rad_deg, 7, 2);
       write (tk.str:tk.len, ' deg to point "',
-        meas.ang_pnt_p^.name.str:meas.ang_pnt_p^.name.len, '"');
-      if meas.ang_ref then begin
+        meas.angt_pnt_p^.name.str:meas.angt_pnt_p^.name.len, '"');
+      if meas.angt_ref then begin
         write (' (ref)');
         end;
+      end;
+
+pntcalc_measty_angf_k: begin           {angle to another point}
+      string_f_fp_ftn (tk, meas.angf_ang * rad_deg, 7, 2);
+      write (tk.str:tk.len, ' deg from point "',
+        meas.angf_pnt_p^.name.str:meas.angf_pnt_p^.name.len, '"');
       end;
 
 pntcalc_measty_distxy_k: begin         {XY distance to another point}
