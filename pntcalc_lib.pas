@@ -20,6 +20,8 @@ begin
   ptc.mem_p := nil;
   ptc.pnt_p := nil;
   ptc.pnt_last_p := nil;
+  ptc.npoints := 0;
+  ptc.flags := [];
   end;
 {
 ********************************************************************************

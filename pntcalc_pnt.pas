@@ -61,6 +61,8 @@ begin
       end
     ;
   ptc.pnt_last_p := addr(pnt);         {update pointer to last list entry}
+
+  ptc.npoints := ptc.npoints + 1;      {count one more point in the list}
   end;
 {
 ********************************************************************************

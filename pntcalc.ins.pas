@@ -55,14 +55,31 @@ pntcalc_measty_distxy_k: (             {XY plane distance from to point}
     flags: pntcalc_pntflg_t;           {set of modifier flags}
     end;
 
+  pntcalc_gflg_k_t = (                 {global flags per library use state}
+    pntcalc_gflg_showcalc_k);          {show calculation progress}
+  pntcalc_gflg_t = set of pntcalc_gflg_k_t;
+
   pntcalc_t = record                   {state for one use of this library}
     mem_p: util_mem_context_p_t;       {mem context for all dynamic memory}
     pnt_p: pntcalc_point_p_t;          {list of points}
     pnt_last_p: pntcalc_point_p_t;     {to last point in list}
+    npoints: sys_int_machine_t;        {number of points in the list}
+    flags: pntcalc_gflg_t;             {set of global flags}
     end;
 {
 *   Subroutines and functions.
 }
+function pntcalc_calc_point (          {attempt to calculate absolute values for a point}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t)        {the point to attempt to update}
+  :boolean;                            {changes were made}
+  val_param; extern;
+
+procedure pntcalc_calc_points (        {attempt to calculate absolute values for all points}
+  in out  ptc: pntcalc_t;              {library use state}
+  out     stat: sys_err_t);            {completion status}
+  val_param; extern;
+
 procedure pntcalc_lib_end (            {end a use of the library, deallocate resources}
   in out  ptc: pntcalc_t;              {library use state, returned invalid}
   out     stat: sys_err_t);            {completion status}
