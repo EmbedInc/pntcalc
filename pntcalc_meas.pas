@@ -83,7 +83,7 @@ begin
 {
 ********************************************************************************
 *
-*   Subroutine PNTCALC_MEAS_ADD_DISTXY (PTC, PNT, PNT2, DIST)
+*   Subroutine PNTCALC_MEAS_ADD_DISTXY (PTC, PNT, PNT2, DIST, STAT)
 *
 *   Add the distance measurement between points PNT and PNT2 to both points.
 *   DIST is the distance projected onto the XY plane.
@@ -91,13 +91,33 @@ begin
 procedure pntcalc_meas_add_distxy (    {add distance in XY plane to another point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt, pnt2: pntcalc_point_t;  {points distance measured between}
-  in      dist: real);                 {distance between the points}
+  in      dist: real;                  {distance between the points}
+  out     stat: sys_err_t);            {completion status}
   val_param;
 
 var
   meas_p: pntcalc_meas_p_t;            {pointer to newly created measurement}
 
 begin
+  sys_error_none (stat);               {init to no error encountered}
+{
+*   Check for distance between these two points already defined.
+}
+  meas_p := pnt.meas_p;                {init to first measurement in list}
+  while meas_p <> nil do begin         {scan the list}
+    if                                 {same thing as previously measured ?}
+        (meas_p^.measty = pntcalc_measty_distxy_k) and {XY distance measurement ?}
+        (meas_p^.distxy_pnt_p = addr(pnt2)) {between same two points ?}
+        then begin
+      if dist = meas_p^.distxy_dist then return; {same value, ignore}
+      sys_stat_set (pntcalc_subsys_k, pntcalc_stat_distdup_k, stat);
+      sys_stat_parm_vstr (pnt.name, stat);
+      sys_stat_parm_vstr (pnt2.name, stat);
+      return;
+      end;
+    meas_p := meas_p^.next_p;          {to next measurement in list}
+    end;                               {back to check this new measurement}
+
   pntcalc_meas_new (ptc, meas_p);      {create and init a new measurement}
   meas_p^.measty := pntcalc_measty_distxy_k; {distance measurement in XY plane}
   meas_p^.distxy_pnt_p := addr(pnt2);  {the other point distance was measured to}

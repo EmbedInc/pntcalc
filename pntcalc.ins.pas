@@ -5,6 +5,7 @@ const
   pntcalc_stat_prevcoor_k = 1;         {full absolute coordinate already set}
   pntcalc_stat_prevxy_k = 2;           {absolute XY coordinate already set}
   pntcalc_stat_prevrefa_k = 3;         {reference angle already set}
+  pntcalc_stat_distdup_k = 4;          {duplicate dist measurement with different value}
 
 type
   pntcalc_point_p_t = ^pntcalc_point_t;
@@ -84,7 +85,8 @@ procedure pntcalc_meas_add_ang (       {add angle measurement from another point
 procedure pntcalc_meas_add_distxy (    {add distance in XY plane to another point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt, pnt2: pntcalc_point_t;  {points distance measured between}
-  in      dist: real);                 {distance between the points}
+  in      dist: real;                  {distance between the points}
+  out     stat: sys_err_t);            {completion status}
   val_param; extern;
 
 procedure pntcalc_pnt_add (            {create and init point, add to end of points list}

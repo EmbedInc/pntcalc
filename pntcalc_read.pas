@@ -245,7 +245,11 @@ begin
 *   Process the command.  The variables NAME and DIST are all set.
 }
   pntcalc_pnt_get (ptc, name, rpnt_p); {get pointer to the remote point}
-  pntcalc_meas_add_distxy (ptc, pnt, rpnt_p^, dist);
+
+  pntcalc_meas_add_distxy (ptc, pnt, rpnt_p^, dist, stat);
+  if sys_error(stat) then begin        {error adding distance measurement ?}
+    hier_err_line_file (rd, stat);     {add line number and file name}
+    end;
   end;
 {
 ********************************************************************************
@@ -298,6 +302,7 @@ begin
         end;
 
       end;                             {end of subcommand cases}
+    if sys_error(stat) then return;
     end;                               {back to get next subcommand}
   end;
 {
