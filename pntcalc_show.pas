@@ -1,13 +1,40 @@
 {   Showing data structures and other items to standard output.
 }
 module pntcalc_show;
+define pntcalc_show_coor;
 define pntcalc_show_point;
 define pntcalc_show_meas;
 define pntcalc_show;
 %include 'pntcalc2.ins.pas';
+{
+********************************************************************************
+*
+*   Subroutine PNTCALC_SHOW_COOR (COOR, UZ)
+*
+*   Show a coordinate within parenthesis.  The full 3D X,Y,Z is shown when UZ is
+*   TRUE, and only the 2D X,Y when UZ is FALSE.
+}
+procedure pntcalc_show_coor (          {show coordinate, 2D or 3D}
+  in      coor: vect_3d_t;             {the coordinate to show}
+  in      uz: boolean);                {using Z component}
+  val_param;
 
-const
-  rad_deg = 180.0 / 3.14159265358979323846; {mult factor for radians to degrees}
+var
+  tk: string_var32_t;                  {scratch token}
+
+begin
+  tk.max := size_char(tk.str);         {init local var string}
+
+  string_f_fp_free (tk, coor.x, 5);    {make X string}
+  write ('(', tk.str:tk.len);
+  string_f_fp_free (tk, coor.y, 5);    {make Y string}
+  write (', ', tk.str:tk.len);
+  if uz then begin                     {Z is in use ?}
+    string_f_fp_free (tk, coor.y, 5);  {make Z string}
+    write (', ', tk.str:tk.len);
+    end;
+  write (')');
+  end;
 {
 ********************************************************************************
 *
@@ -35,31 +62,21 @@ begin
   ind := indent + 2;                   {make indentation one level down}
 
   if pntcalc_pntflg_nearxy_k in pnt.flags then begin {some part of near point is known ?}
-    string_f_fp_free (tk, pnt.near.x, 5);
-    write ('':ind, 'near (', tk.str:tk.len);
-    string_f_fp_free (tk, pnt.near.y, 5);
-    write (', ', tk.str:tk.len);
-    if pntcalc_pntflg_nearxyz_k in pnt.flags then begin {Z is also known ?}
-      string_f_fp_free (tk, pnt.near.y, 5);
-      write (', ', tk.str:tk.len);
-      end;
-    writeln (')');
+    write ('':ind, 'near ');
+    pntcalc_show_coor (                {show NEAR coordinate}
+      pnt.near, pntcalc_pntflg_nearxyz_k in pnt.flags);
+    writeln;
     end;
 
-  if pntcalc_pntflg_xy_k in pnt.flags then begin {some part of abs coordinate is known ?}
-    string_f_fp_free (tk, pnt.coor.x, 5);
-    write ('':ind, 'at (', tk.str:tk.len);
-    string_f_fp_free (tk, pnt.coor.y, 5);
-    write (', ', tk.str:tk.len);
-    if pntcalc_pntflg_coor_k in pnt.flags then begin {Z is also known ?}
-      string_f_fp_free (tk, pnt.coor.y, 5);
-      write (', ', tk.str:tk.len);
-      end;
-    writeln (')');
+  if pntcalc_pntflg_xy_k in pnt.flags then begin {some part of abs location is known ?}
+    write ('':ind, 'at ');
+    pntcalc_show_coor (                {show absolute coordinate}
+      pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln;
     end;
 
   if pntcalc_pntflg_ang0_k in pnt.flags then begin {reference angle known ?}
-    string_f_fp_free (tk, pnt.ang0 * rad_deg, 5);
+    string_f_fp_free (tk, pnt.ang0 * math_rad_deg, 5);
     writeln ('':ind, 'Ref ang ', tk.str:tk.len, ' deg');
     end;
 
@@ -93,7 +110,7 @@ begin
   case meas.measty of                  {what kind of measurement is this ?}
 
 pntcalc_measty_angt_k: begin           {angle to another point}
-      string_f_fp_ftn (tk, meas.angt_ang * rad_deg, 7, 2);
+      string_f_fp_ftn (tk, meas.angt_ang * math_rad_deg, 7, 2);
       write (tk.str:tk.len, ' deg to point "',
         meas.angt_pnt_p^.name.str:meas.angt_pnt_p^.name.len, '"');
       if meas.angt_ref then begin
@@ -102,7 +119,7 @@ pntcalc_measty_angt_k: begin           {angle to another point}
       end;
 
 pntcalc_measty_angf_k: begin           {angle to another point}
-      string_f_fp_ftn (tk, meas.angf_ang * rad_deg, 7, 2);
+      string_f_fp_ftn (tk, meas.angf_ang * math_rad_deg, 7, 2);
       write (tk.str:tk.len, ' deg from point "',
         meas.angf_pnt_p^.name.str:meas.angf_pnt_p^.name.len, '"');
       end;

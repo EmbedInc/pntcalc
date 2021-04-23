@@ -107,7 +107,15 @@ done_opts:                             {done with all the command line options}
   pntcalc_read_file (ptc, fnam_in, stat);
   sys_error_abort (stat, '', '', nil, 0);
 
-  pntcalc_show (ptc, 0);
+  pntcalc_show (ptc, 0);               {show the raw data}
+
+  writeln;
+  ptc.flags := ptc.flags + [pntcalc_gflg_showcalc_k]; {show calculations}
+  pntcalc_calc_points (ptc, stat);     {resolve computable parameters}
+  sys_error_abort (stat, '', '', nil, 0);
+
+  writeln;
+  pntcalc_show (ptc, 0);               {show the cooked data}
 
   pntcalc_lib_end (ptc, stat);
   sys_error_abort (stat, '', '', nil, 0);
