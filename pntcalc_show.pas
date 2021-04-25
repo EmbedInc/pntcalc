@@ -57,21 +57,21 @@ begin
   tk.max := size_char(tk.str);         {init local var string}
 
   writeln ('':indent, 'Point "', pnt.name.str:pnt.name.len, '"');
-  if not sub then return;
-
   ind := indent + 2;                   {make indentation one level down}
-
-  if pntcalc_pntflg_nearxy_k in pnt.flags then begin {some part of near point is known ?}
-    write ('':ind, 'near ');
-    pntcalc_show_coor (                {show NEAR coordinate}
-      pnt.near, pntcalc_pntflg_nearxyz_k in pnt.flags);
-    writeln;
-    end;
 
   if pntcalc_pntflg_xy_k in pnt.flags then begin {some part of abs location is known ?}
     write ('':ind, 'at ');
     pntcalc_show_coor (                {show absolute coordinate}
       pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln;
+    end;
+
+  if not sub then return;
+
+  if pntcalc_pntflg_nearxy_k in pnt.flags then begin {some part of near point is known ?}
+    write ('':ind, 'near ');
+    pntcalc_show_coor (                {show NEAR coordinate}
+      pnt.near, pntcalc_pntflg_nearxyz_k in pnt.flags);
     writeln;
     end;
 
@@ -139,13 +139,14 @@ otherwise
 {
 ********************************************************************************
 *
-*   Subroutine PNTCALC_SHOW (PTC, INDENT)
+*   Subroutine PNTCALC_SHOW (PTC, INDENT, SUB)
 *
 *   Show the data in the library useage state PTC.
 }
 procedure pntcalc_show (               {show all the data in a lib usage}
   in      ptc: pntcalc_t;              {library use state to show data of}
-  in      indent: sys_int_machine_t);  {number of spaces to indent top level lines}
+  in      indent: sys_int_machine_t;   {number of spaces to indent top level lines}
+  in      sub: boolean);               {show sub-level information}
   val_param;
 
 var
@@ -157,7 +158,7 @@ begin
   pnt_p := ptc.pnt_p;                  {init to first point in list}
   while pnt_p <> nil do begin          {scan the list of points}
     n := n + 1;                        {count one more point found}
-    pntcalc_show_point (pnt_p^, indent, true);
+    pntcalc_show_point (pnt_p^, indent, sub);
     pnt_p := pnt_p^.next_p;            {to next point in list}
     end;                               {back to show this new point}
 

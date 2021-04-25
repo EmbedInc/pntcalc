@@ -147,7 +147,8 @@ procedure pntcalc_show_meas (          {show data of one measurement to STDOUT}
 
 procedure pntcalc_show (               {show all the data in a lib usage}
   in      ptc: pntcalc_t;              {library use state to show data of}
-  in      indent: sys_int_machine_t);  {number of spaces to indent top level lines}
+  in      indent: sys_int_machine_t;   {number of spaces to indent top level lines}
+  in      sub: boolean);               {show sub-level information}
   val_param; extern;
 
 procedure pntcalc_show_coor (          {show coordinate, 2D or 3D}
