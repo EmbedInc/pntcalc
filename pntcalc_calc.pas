@@ -1,4 +1,22 @@
 {   Calculate point values from measurements.
+*
+*   About angles
+*
+*     This software is meant to handle surveying data, measured with instruments
+*     like transits.  These generally use compass-style angles.  0 degrees is
+*     north, straight ahead, or to some reference other angles are relative to.
+*     Positive angles are then clockwise from that, when viewed from above.
+*
+*     In math, 0 is usually in the +X direction, with positive angles
+*     counter-clockwise from that when viewed from to +Z axis.  This differs
+*     from survey angles by a 90 degree shift in the reference and a sign
+*     change.
+*
+*     This software stores angles as survey angles, in radians.  The constants
+*     MATCH_RAD_DEG, and MATH_DEG_RAD are the multiplication factors to convert
+*     from radians to degrees, and degrees to radians, respsectively.  The
+*     functions MATH_ANGLE_MATH and MATH_ANGLE_SURV can be used to convert
+*     between math and survey angles.
 }
 module pntcalc_calc;
 define pntcalc_calc_point;
@@ -65,16 +83,186 @@ make_ref:
 {
 ********************************************************************************
 *
+*   Local subroutine ANGF_PNT_VECT (MEAS, PNT, VECT)
+*
+*   Compute the starting point and unit vector indicated by the measurement
+*   MEAS.  The measurement must of an angle from a point, the 0 reference angle
+*   for the point known, and the XY location of that point known.  PNT and VECT
+*   are returned the ray indicated by the angle measurement.  PNT is the absolue
+*   XY starting coordinate, and VECT the 2D unit vector implied by the angle.
+}
+procedure angf_pnt_vect (              {compute ray from ANGF measurement}
+  in      meas: pntcalc_meas_t;        {ANGF measurement, ANG0 and XY known}
+  out     pnt: vect_2d_t;              {2D ray starting point}
+  out     vect: vect_2d_t);            {2D ray unit vector}
+  val_param; internal;
+
+var
+  pnt_p: pntcalc_point_p_t;            {pointer to the point angle measured from}
+  ang: real;                           {absolute math angle}
+
+begin
+  pnt_p := meas.angf_pnt_p;            {get pointer to the point angle measured from}
+
+  pnt.x := pnt_p^.coor.x;              {return the ray starting point}
+  pnt.y := pnt_p^.coor.y;
+
+  ang := math_angle_math (             {make absolute angle, convert to math type}
+    meas.angf_ang + pnt_p^.ang0);
+  vect.x := cos(ang);                  {make the ray unit vector}
+  vect.y := sin(ang);
+  end;
+{
+********************************************************************************
+*
 *   Local subroutine RESOLVE_XY (PTC, PNT)
 *
-*   Try to resolve the XY absolute position of point PNT.
+*   Try to resolve the XY absolute position of point PNT.  There are several
+*   cases where the absolute position of the current point (PNT) can be
+*   determined:
+*
+*     1 - Angles are known from two more more points with known location.  When
+*         there are more than two points, the two with the angle least co-linear
+*         are chosen.
+*
+*     2 - An angle and distance are known from another point with known
+*         location.
+*
+*     3 - The distance is known from two or more points with known location, and
+*         the NEAR location of this point is filled in.
+*
+*     4 - Three or more angles are available to other points with known
+*         position.  This is not implemented yet.
 }
 procedure resolve_xy (                 {try to resolve XY position}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t);       {the point to attempt to update}
   val_param; internal;
 
+const
+  meas_list_max = 8;                   {max measurement we can save in a list}
+
+type
+  meas_list_t =                        {list of measurements}
+    array [1..meas_list_max] of pntcalc_meas_p_t;
+
+var
+  meas_p: pntcalc_meas_p_t;            {pointer to current measurement}
+  angf: meas_list_t;                   {list of angles from other known points}
+  nangf: sys_int_machine_t;            {number of entries in ANGF list}
+  disp: meas_list_t;                   {list of distances to other known points}
+  ndisp: sys_int_machine_t;            {number of entries in DISP list}
+  pnt_p: pntcalc_point_p_t;            {pointer to a remote point}
+  meas1_p, meas2_p: pntcalc_meas_p_t;  {pointers to measurements for resolving location}
+  p1, p2: vect_2d_t;                   {scratch XY coordinates}
+  v1, v2: vect_2d_t;                   {scratch 2D vectors}
+  simul: array[1..2, 1..3] of real;    {coefficients for simultaneous equations}
+  smres: array[1..2] of real;          {answers from solving simultaneous equations}
+  valid: boolean;                      {simultaneous equation solution is valid}
+
+label
+  next_meas, not_angf;
+
 begin
+{
+*   Build the lists according to the measurements related to this point.  The
+*   following lists are created:
+*
+*     ANGF  -  Measurements of angles from other points.  The XY locations and
+*       the 0 reference angles of the other points are known.
+*
+*     DISP  -  Measurements of distances to other points.  The XY locations of
+*       the other points is known.
+}
+  nangf := 0;                          {init number of angles from known points}
+  ndisp := 0;                          {init number of distances to known points}
+
+  meas_p := pnt.meas_p;                {init to first measurement in the list}
+  while meas_p <> nil do begin         {scan the list of measurement for this point}
+    case meas_p^.measty of             {what kind of measurement is this one ?}
+
+pntcalc_measty_angt_k: begin           {angle from here to another point}
+  end;
+
+pntcalc_measty_angf_k: begin           {angle to here from another point}
+  pnt_p := meas_p^.angf_pnt_p;         {get pointer to the other point}
+  if not (pntcalc_pntflg_xy_k in pnt_p^.flags) {location of other point not known ?}
+    then goto next_meas;
+  if not (pntcalc_pntflg_ang0_k in pnt_p^.flags) {angles have no reference ?}
+    then goto next_meas;
+  if nangf >= meas_list_max            {no room in list ?}
+    then goto next_meas;
+  nangf := nangf + 1;                  {count one more entry in the list}
+  angf[nangf] := meas_p;               {save this measurement in the list}
+  end;
+
+pntcalc_measty_distxy_k: begin         {distance to another point}
+  pnt_p := meas_p^.distxy_pnt_p;       {get pointer to the other point}
+  if not (pntcalc_pntflg_xy_k in pnt_p^.flags) {location of other point not known ?}
+    then goto next_meas;
+  if ndisp >= meas_list_max            {no room in list ?}
+    then goto next_meas;
+  ndisp := ndisp + 1;                  {count one more entry in the list}
+  disp[ndisp] := meas_p;               {save this measurement in the list}
+  end;
+
+      end;                             {end of measurement type cases}
+next_meas:                             {done with this measurement, on to next}
+    meas_p := meas_p^.next_p;          {to next measurement in the list}
+    end;                               {back to check out this new measurement}
+{
+*   The ANGF and DISP lists have been set.
+*
+*   Resolve the location of this point from two or more angles from other
+*   points.
+}
+  if nangf < 2 then goto not_angf;     {not enough points angles are known from ?}
+
+  meas1_p := angf[1];                  {init to use the first two angles}
+  meas2_p := angf[2];
+
+  {***** WARNING *****
+  *
+  *   Picking the best pair of angles to use when more than two are available is
+  *   not implemented yet.
+  *
+  ***** END WARNING *****}
+
+  {
+  *   Resolve the location of this points from the two angle measurements
+  *   pointed to by MEAS1_P and MEAS2_P.  Both measurements are angles from
+  *   other points.  The XY location and the 0 reference angles of those points
+  *   are known.
+  }
+  angf_pnt_vect (meas1_p^, p1, v1);    {make start point and unit vector from point 1}
+  angf_pnt_vect (meas2_p^, p2, v2);    {make start point and unit vector from point 2}
+
+  simul[1, 1] := v1.x;                 {fill in simultaneous equation coefficients}
+  simul[1, 2] := -v2.x;
+  simul[1, 3] := p2.x - p1.x;
+  simul[2, 1] := v1.y;
+  simul[2, 2] := -v2.y;
+  simul[2, 3] := p2.y - p1.y;
+  math_simul (                         {solve the simultaneous equations}
+    2,                                 {number of equations (and unknowns)}
+    simul,                             {array of coefficients}
+    smres,                             {returned results}
+    valid);                            {TRUE when results are valid}
+  if not valid then goto not_angf;
+
+  pnt.coor.x := p1.x + smres[1]*v1.x;  {make final absolute coor of this point}
+  pnt.coor.y := p1.y + smres[1]*v1.y;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  return;
+
+not_angf:                              {skip to here if can't find point from angles}
+
+
+
+
+
+
+
   end;
 {
 ********************************************************************************
