@@ -79,6 +79,12 @@ make_ref:
   ang := arctan2 (dy, dx);             {make the angle to the remote point}
   pnt.ang0 := ang + meas_p^.angt_ang;  {set the reference angle for this point}
   pnt.flags := pnt.flags + [pntcalc_pntflg_ang0_k]; {indicate ref angle set}
+
+  if pntcalc_gflg_showcalc_k in ptc.flags then begin
+    writeln ('  Point ', pnt.name.str:pnt.name.len, ' ANG0 ',
+      (pnt.ang0 * math_rad_deg):7:2, ' by angle to point ',
+      meas_p^.angt_pnt_p^.name.str:meas_p^.angt_pnt_p^.name.len);
+    end;
   end;
 {
 ********************************************************************************
@@ -121,9 +127,9 @@ begin
 *   cases where the absolute position of the current point (PNT) can be
 *   determined:
 *
-*     1 - Angles are known from two more more points with known location.  When
-*         there are more than two points, the two with the angle least co-linear
-*         are chosen.
+*     1 - Angles are known from two or more points with known locations.  When
+*         there are more than two points, the two with the angles least
+*         co-linear are chosen.
 *
 *     2 - An angle and distance are known from another point with known
 *         location.
@@ -153,15 +159,18 @@ var
   disp: meas_list_t;                   {list of distances to other known points}
   ndisp: sys_int_machine_t;            {number of entries in DISP list}
   pnt_p: pntcalc_point_p_t;            {pointer to a remote point}
+  ii, jj: sys_int_machine_t;           {scratch integers and loop counters}
   meas1_p, meas2_p: pntcalc_meas_p_t;  {pointers to measurements for resolving location}
   p1, p2: vect_2d_t;                   {scratch XY coordinates}
   v1, v2: vect_2d_t;                   {scratch 2D vectors}
+  ang: real;                           {scratch angle}
+  dist: real;                          {scratch distance}
   simul: array[1..2, 1..3] of real;    {coefficients for simultaneous equations}
   smres: array[1..2] of real;          {answers from solving simultaneous equations}
   valid: boolean;                      {simultaneous equation solution is valid}
 
 label
-  next_meas, not_angf;
+  next_meas, not_angf, not_pntang;
 
 begin
 {
@@ -229,10 +238,10 @@ next_meas:                             {done with this measurement, on to next}
   ***** END WARNING *****}
 
   {
-  *   Resolve the location of this points from the two angle measurements
-  *   pointed to by MEAS1_P and MEAS2_P.  Both measurements are angles from
-  *   other points.  The XY location and the 0 reference angles of those points
-  *   are known.
+  *   Resolve the location of this point from the two angle measurements pointed
+  *   to by MEAS1_P and MEAS2_P.  Both measurements are angles from other
+  *   points.  The XY location and the 0 reference angles of those points are
+  *   known.
   }
   angf_pnt_vect (meas1_p^, p1, v1);    {make start point and unit vector from point 1}
   angf_pnt_vect (meas2_p^, p2, v2);    {make start point and unit vector from point 2}
@@ -253,9 +262,65 @@ next_meas:                             {done with this measurement, on to next}
   pnt.coor.x := p1.x + smres[1]*v1.x;  {make final absolute coor of this point}
   pnt.coor.y := p1.y + smres[1]*v1.y;
   pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+
+  if pntcalc_gflg_showcalc_k in ptc.flags then begin
+    write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
+    pntcalc_show_coor (pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln (' by angles from points ',
+      meas1_p^.angf_pnt_p^.name.str:meas1_p^.angf_pnt_p^.name.len, ' and ',
+      meas2_p^.angf_pnt_p^.name.str:meas2_p^.angf_pnt_p^.name.len);
+    end;
   return;
 
 not_angf:                              {skip to here if can't find point from angles}
+{
+*   Resolve the location of this point from an angle and distance from another
+*   point.
+*
+*   After scanning the available choices, MEAS1_P will point to the distance
+*   measurement, and MEAS2_P to the angle measurement.  If there are multiple
+*   choices, the one with the shortest distance will be used.
+}
+  meas1_p := nil;                      {init to no suitable distance measurement}
+
+  for ii := 1 to ndisp do begin        {scan list of distances to other points}
+    for jj := 1 to nangf do begin      {look for corresponding angle measurements}
+      if angf[jj]^.angf_pnt_p = disp[ii]^.distxy_pnt_p then begin {angle from same point ?}
+        if meas1_p = nil
+          then begin                   {no previous angle/distance measurements}
+            meas1_p := disp[ii];       {save pointer to distance measurement}
+            meas2_p := angf[jj];       {save pointer to angle measurement}
+            end
+          else begin                   {prev angle/dist was found}
+            if disp[ii]^.distxy_dist < meas1_p^.distxy_dist then begin {closer ?}
+              meas1_p := disp[ii];     {switch to new closer angle/dist measurements}
+              meas2_p := angf[jj];
+              end;
+            end
+          ;
+        end;                           {end of found angle for dist measurement}
+      end;                             {back for next angle to check against dist pnt}
+    end;                               {back for next distance measurement in list}
+  if meas1_p = nil then goto not_pntang; {no angle/distance measurements available ?}
+
+  pnt_p := meas1_p^.distxy_pnt_p;      {get pointer to the remote point}
+  dist := meas1_p^.distxy_dist;        {distance between the points}
+  ang := math_angle_math (meas2_p^.angf_ang); {angle from other point to here, math type}
+
+  pnt.coor.x := pnt_p^.coor.x + cos(ang)*dist; {make coordinate of this point}
+  pnt.coor.y := pnt_p^.coor.y + sin(ang)*dist;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+
+  if pntcalc_gflg_showcalc_k in ptc.flags then begin
+    write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
+    pntcalc_show_coor (pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln (' by angle/dist from point ',
+      meas1_p^.distxy_pnt_p^.name.str:meas1_p^.distxy_pnt_p^.name.len);
+    end;
+  return;
+
+not_pntang:                            {no distance with angle measurements available}
+
 
 
 
@@ -298,19 +363,6 @@ begin
 
   if pnt.flags = flgold then return;   {no changes were made ?}
   pntcalc_calc_point := true;          {indicate changes were made}
-
-  if pntcalc_gflg_showcalc_k in ptc.flags then begin {show calculation progress ?}
-    flgold := pnt.flags - flgold;      {set of flags that were added}
-    write ('  Point "', pnt.name.str:pnt.name.len, '"');
-    if pntcalc_pntflg_xy_k in flgold then begin
-      write (' AT ');
-      pntcalc_show_coor (pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
-      end;
-    if pntcalc_pntflg_ang0_k in flgold then begin
-      write (' ANG0 ', (pnt.ang0 * math_rad_deg):7:2);
-      end;
-    writeln;
-    end;
   end;
 {
 ********************************************************************************
