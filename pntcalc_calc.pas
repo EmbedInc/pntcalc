@@ -121,6 +121,82 @@ begin
 {
 ********************************************************************************
 *
+*   Local subroutine RESOLVE_XY_2DIST (PTC, PNT, MEAS1, MEAS2)
+*
+*   Resolve the location of the point PNT from the two distance measurements
+*   MEAS1 and MEAS2.  The point has its NEAR location set.  MEAS1 and MEAS2 are
+*   guaranteed to be distance measurements to points that have known locations.
+}
+procedure resolve_xy_2dist (           {resolve loc from 2 distances to other points}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t;        {the point to resolve location of}
+  in      meas1, meas2: pntcalc_meas_t); {the distance measurements}
+  val_param; internal;
+
+var
+  p1, p2: vect_2d_t;                   {coordinates of the two points}
+  p3: vect_2d_t;                       {projection of solution points along baseline}
+  r1, r2: real;                        {the distances from each of the two points}
+  vbase: vect_2d_t;                    {baseline unit vector, from P1 to P2}
+  vperp: vect_2d_t;                    {unit vector perpendicular to baseline}
+  dbase: real;                         {total distance between the two points}
+  d1: real;                            {distance from P1 to PNT along basline}
+  dperp: real;                         {distance to solution point in perp direction}
+  vnear: vect_2d_t;                    {vector from P1 to NEAR point}
+  m: real;                             {scratch}
+
+begin
+  p1.x := meas1.distxy_pnt_p^.coor.x;  {get coordinates of the two remote points}
+  p1.y := meas1.distxy_pnt_p^.coor.y;
+  p2.x := meas2.distxy_pnt_p^.coor.x;
+  p2.y := meas2.distxy_pnt_p^.coor.y;
+
+  r1 := meas1.distxy_dist;             {get the distances from each remote point}
+  r2 := meas2.distxy_dist;
+
+  vbase.x := p2.x - p1.x;              {make raw baseline vector}
+  vbase.y := p2.y - p1.y;
+
+  dbase := sqrt(sqr(vbase.x) + sqr(vbase.y)); {length of the baseline}
+  if dbase < 1.0e-30 then return;      {points too close ?}
+  if dbase > (r1 + r2) then return;    {the circles are apart ?}
+  if r1 > (dbase + r2) then return;    {circle 1 too big to intersect circle 2 ?}
+  if r2 > (dbase + r1) then return;    {circle 2 too big to intersect circle 1 ?}
+
+  vbase.x := vbase.x / dbase;          {make baseline unit vector}
+  vbase.y := vbase.y / dbase;
+
+  vperp.x := -vbase.y;                 {make unit vector perpendicular to baseline}
+  vperp.y := vbase.x;
+
+  d1 :=                                {distance from P1 along baseline to solution points}
+    (sqr(dbase) + sqr(r1) - sqr(r2)) / (2.0 * dbase);
+  p3.x := p1.x + (d1 * vbase.x);       {where solution points are along the baseline}
+  p3.y := p1.y + (d1 * vbase.y);
+
+  dperp := sqr(r1) - sqr(d1);          {make perp distance to solution point in DPERP}
+  if dperp < 0.0 then return;
+  dperp := sqrt(dperp);
+
+  vnear.x := pnt.near.x - p1.x;        {vector to NEAR point from P1}
+  vnear.y := pnt.near.y - p1.y;
+  m := (vnear.x * vperp.x) + (vnear.y * vperp.y); {NEAR projection in perp direction}
+
+  if m >= 0.0
+    then begin                         {choose the solution point in +PERP direction}
+      pnt.coor.x := p3.x + (dperp * vperp.x);
+      pnt.coor.y := p3.y + (dperp * vperp.y);
+      end
+    else begin                         {choose the solution point in -PERP direction}
+      pnt.coor.x := p3.x - (dperp * vperp.x);
+      pnt.coor.y := p3.y - (dperp * vperp.y);
+      end
+    ;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY location is now set}
+  end;
+{
+********************************************************************************
+*
 *   Local subroutine RESOLVE_XY (PTC, PNT)
 *
 *   Try to resolve the XY absolute position of point PNT.  There are several
@@ -170,7 +246,7 @@ var
   valid: boolean;                      {simultaneous equation solution is valid}
 
 label
-  next_meas, not_angf, not_pntang;
+  next_meas, not_angf, not_pntang, not_dist2;
 
 begin
 {
@@ -320,7 +396,45 @@ not_angf:                              {skip to here if can't find point from an
   return;
 
 not_pntang:                            {no distance with angle measurements available}
+{
+*   Resolve the location of this point from distances from two other points.
+*   The NEAR location of this point must be filled in.  Distances from two other
+*   points results in two possible locations (intersection of two circles).  The
+*   one closest to the NEAR point is used.
+}
+  if not (pntcalc_pntflg_nearxy_k in pnt.flags) {NEAR of this point is not known ?}
+    then goto not_dist2;
+  if ndisp < 2                         {not at least 2 distances availble ?}
+    then goto not_dist2;
 
+  {***** WARNING *****
+  *
+  *   Picking the best pair of distances to use when more than 2 are available
+  *   has not been implemented yet.
+  *
+  ***** END WARNING *****}
+
+  meas1_p := disp[1];                  {select the two distance measurements to use}
+  meas2_p := disp[2];
+
+  resolve_xy_2dist (                   {resolve loc from 2 distances to other points}
+    ptc,                               {library use state}
+    pnt,                               {the point to resolve location of}
+    meas1_p^, meas2_p^);               {distance measurements to two known points}
+  if not (pntcalc_pntflg_xy_k in pnt.flags) {unable to resolve location ?}
+    then goto not_dist2;
+
+  if pntcalc_gflg_showcalc_k in ptc.flags then begin
+    write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
+    pntcalc_show_coor (pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln (' by distance from points ',
+      meas1_p^.distxy_pnt_p^.name.str:meas1_p^.distxy_pnt_p^.name.len,
+      ' and ',
+      meas2_p^.distxy_pnt_p^.name.str:meas2_p^.distxy_pnt_p^.name.len);
+    end;
+  return;
+
+not_dist2:                             {can't use distances from two other points}
 
 
 
