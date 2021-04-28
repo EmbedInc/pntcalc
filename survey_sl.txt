@@ -1,0 +1,47 @@
+                            Program SURVEY_SL
+                              28 April 2021
+
+This program reads land survey data from a .PNTS file, and writes a
+.INS.SL file with the 2D coordinates of all points for which locations
+could be resolved.  The .PNTS file format is described in the PNTCALC_FILE
+documentation file.  The .INS.SL file is intended to be read by the SLIDE
+program, described in the SLIDE documentation file.
+
+The command line options are:
+
+  -IN <input file name>
+  <input file name>
+
+    Provides the input file name.  The ".pnts" mandatory file name suffix
+    may be omitted.
+
+    The second form of this command line option (without the "-IN"
+    keyword) is only allowed when the input file name does not start with
+    a dash.  When a command line argument does not start with a dash, it
+    is taken as the input file name if the input file has not previously
+    been specified.
+
+    An input file name is required.  There is no default.
+
+  -OUT <output file name>
+  <output file name>
+
+    Provides the output file name.  The ".ins.sl" file name suffix may be
+    omitted.
+
+    The second form of this command line option (without the "-OUT"
+    keyword) is only allowed when the output file name does not start with
+    a dash.  When a command line argument does not start with a dash, it
+    is taken as the output file name if the input file was previously
+    specified, but the output file not.
+
+    The default output file name is the leafname of the input file without
+    the ".pnts" suffix, with ".ins.sl" appended.
+
+The .INS.SL output file will contain one VAR NEW command for each point
+for which a 2D coordinate could be determined.  The variable name will be
+the point name from the input file, and the data type will be COOR2D.  For
+example, point "corner1" at (25.1,-37.2) will result in the following line
+in the .INS.SL file:
+
+  var new corner1 Coor2d 25.1 -37.2

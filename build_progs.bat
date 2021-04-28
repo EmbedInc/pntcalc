@@ -7,4 +7,5 @@ rem
 setlocal
 call build_pasinit
 
+call src_prog %srcdir% survey_sl
 call src_prog %srcdir% test_pntcalc
