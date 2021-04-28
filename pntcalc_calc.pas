@@ -13,7 +13,7 @@
 *     change.
 *
 *     This software stores angles as survey angles, in radians.  The constants
-*     MATCH_RAD_DEG, and MATH_DEG_RAD are the multiplication factors to convert
+*     MATH_RAD_DEG, and MATH_DEG_RAD are the multiplication factors to convert
 *     from radians to degrees, and degrees to radians, respsectively.  The
 *     functions MATH_ANGLE_MATH and MATH_ANGLE_SURV can be used to convert
 *     between math and survey angles.
@@ -69,7 +69,7 @@ next_meas:                             {go on to next measurement in the list}
     end;                               {back to check out this new measurement}
   return;                              {didn't find a suitable measurement}
 {
-*   MEAS_P points to a reference angle measurement.  This XY coordinates of this
+*   MEAS_P points to a reference angle measurement.  The XY coordinates of this
 *   point and the remote point are known.  Now compute the absolute 0 reference
 *   angle.
 }
@@ -77,7 +77,8 @@ make_ref:
   dx := meas_p^.angt_pnt_p^.coor.x - pnt.coor.x; {make delta to remote point}
   dy := meas_p^.angt_pnt_p^.coor.y - pnt.coor.y;
   ang := arctan2 (dy, dx);             {make the angle to the remote point}
-  pnt.ang0 := ang + meas_p^.angt_ang;  {set the reference angle for this point}
+  pnt.ang0 :=                          {set the reference angle for this point}
+    math_angle_surv(ang) + meas_p^.angt_ang;
   pnt.flags := pnt.flags + [pntcalc_pntflg_ang0_k]; {indicate ref angle set}
 
   if pntcalc_gflg_showcalc_k in ptc.flags then begin
@@ -188,7 +189,8 @@ begin
   p.x := mdist.distxy_pnt_p^.coor.x;   {get location measurements are from}
   p.y := mdist.distxy_pnt_p^.coor.y;
   dist := mdist.distxy_dist;           {distance to the remote point}
-  ang := math_angle_math (mang.angf_ang); {angle from other point to here, math type}
+  ang := math_angle_math (             {angle from other point to here, math type}
+    mang.angf_ang + mang.angf_pnt_p^.ang0);
 
   pnt.coor.x := p.x + cos(ang)*dist;   {make coordinate of this point}
   pnt.coor.y := p.y + sin(ang)*dist;
