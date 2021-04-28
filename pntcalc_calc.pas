@@ -561,8 +561,9 @@ begin
 
     pnt_p := ptc.pnt_p;                {init to first point in the list}
     while pnt_p <> nil do begin        {scan the list of points}
-      changed := changed or            {try to calculate parameters for this point}
-        pntcalc_calc_point (ptc, pnt_p^);
+      if pntcalc_calc_point (ptc, pnt_p^) then begin {this point updated ?}
+        changed := true;
+        end;
       pnt_p := pnt_p^.next_p;          {to next point in the list}
       end;                             {back to do this new point}
 
