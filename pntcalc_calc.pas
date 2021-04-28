@@ -121,16 +121,92 @@ begin
 {
 ********************************************************************************
 *
+*   Local subroutine RESOLVE_XY_2ANG (PTC, PNT, MEAS1, MEAS2)
+*
+*   Resolve the location of the point PNT from the two angle measurements MEAS1
+*   and MEAS2.  Both measurements must be angles from other points, the XY
+*   location of those points must be known, and the 0 reference angle for those
+*   points known.
+}
+procedure resolve_xy_2ang (            {resolve loc from 2 angles from other points}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t;        {the point to resolve location of}
+  in      meas1, meas2: pntcalc_meas_t); {the angle measurements from remote points}
+  val_param; internal;
+
+var
+  p1, p2: vect_2d_t;                   {start point of the two rays}
+  v1, v2: vect_2d_t;                   {unit direction vectors of the two rays}
+  simul: array[1..2, 1..3] of real;    {coefficients for simultaneous equations}
+  smres: array[1..2] of real;          {answers from solving simultaneous equations}
+  valid: boolean;                      {simultaneous equation solution is valid}
+
+begin
+  angf_pnt_vect (meas1, p1, v1);       {make start point and unit vector from point 1}
+  angf_pnt_vect (meas2, p2, v2);       {make start point and unit vector from point 2}
+
+  simul[1, 1] := v1.x;                 {fill in simultaneous equation coefficients}
+  simul[1, 2] := -v2.x;
+  simul[1, 3] := p2.x - p1.x;
+  simul[2, 1] := v1.y;
+  simul[2, 2] := -v2.y;
+  simul[2, 3] := p2.y - p1.y;
+  math_simul (                         {solve the simultaneous equations}
+    2,                                 {number of equations (and unknowns)}
+    simul,                             {array of coefficients}
+    smres,                             {returned results}
+    valid);                            {TRUE when results are valid}
+  if not valid then return;
+
+  pnt.coor.x := p1.x + smres[1]*v1.x;  {make final absolute coor of this point}
+  pnt.coor.y := p1.y + smres[1]*v1.y;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  end;
+{
+********************************************************************************
+*
+*   Local subroutine RESOLVE_XY_DISTANG (PTC, PNT, MDIST, MANG)
+*
+*   Resolve the location of point PNT from an angle and distance from another
+*   point.  MDIST is the distance measurement from the other point, and MANG
+*   the angle measurement from that point.  The XY location and reference angle
+*   of the other point must be known.
+}
+procedure resolve_xy_distang (         {resolve loc from dist and ang from other point}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t;        {the point to resolve location of}
+  in      mdist: pntcalc_meas_t;       {distance measurement to remote point}
+  in      mang: pntcalc_meas_t);       {angle measurement from remote point}
+  val_param; internal;
+
+var
+  p: vect_2d_t;                        {point angle and distance measured from}
+  dist: real;                          {distance to remote point}
+  ang: real;                           {angle measured from remote point}
+
+begin
+  p.x := mdist.distxy_pnt_p^.coor.x;   {get location measurements are from}
+  p.y := mdist.distxy_pnt_p^.coor.y;
+  dist := mdist.distxy_dist;           {distance to the remote point}
+  ang := math_angle_math (mang.angf_ang); {angle from other point to here, math type}
+
+  pnt.coor.x := p.x + cos(ang)*dist;   {make coordinate of this point}
+  pnt.coor.y := p.y + sin(ang)*dist;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  end;
+{
+********************************************************************************
+*
 *   Local subroutine RESOLVE_XY_2DIST (PTC, PNT, MEAS1, MEAS2)
 *
 *   Resolve the location of the point PNT from the two distance measurements
-*   MEAS1 and MEAS2.  The point has its NEAR location set.  MEAS1 and MEAS2 are
-*   guaranteed to be distance measurements to points that have known locations.
+*   MEAS1 and MEAS2.  The point has its NEAR location set.  MEAS1 and MEAS2 must
+*   be distance measurements to points that have known locations.
 }
 procedure resolve_xy_2dist (           {resolve loc from 2 distances to other points}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t;        {the point to resolve location of}
-  in      meas1, meas2: pntcalc_meas_t); {the distance measurements}
+  in      meas1, meas2: pntcalc_meas_t); {distance measurements to remote points}
   val_param; internal;
 
 var
@@ -237,13 +313,6 @@ var
   pnt_p: pntcalc_point_p_t;            {pointer to a remote point}
   ii, jj: sys_int_machine_t;           {scratch integers and loop counters}
   meas1_p, meas2_p: pntcalc_meas_p_t;  {pointers to measurements for resolving location}
-  p1, p2: vect_2d_t;                   {scratch XY coordinates}
-  v1, v2: vect_2d_t;                   {scratch 2D vectors}
-  ang: real;                           {scratch angle}
-  dist: real;                          {scratch distance}
-  simul: array[1..2, 1..3] of real;    {coefficients for simultaneous equations}
-  smres: array[1..2] of real;          {answers from solving simultaneous equations}
-  valid: boolean;                      {simultaneous equation solution is valid}
 
 label
   next_meas, not_angf, not_pntang, not_dist2;
@@ -313,31 +382,12 @@ next_meas:                             {done with this measurement, on to next}
   *
   ***** END WARNING *****}
 
-  {
-  *   Resolve the location of this point from the two angle measurements pointed
-  *   to by MEAS1_P and MEAS2_P.  Both measurements are angles from other
-  *   points.  The XY location and the 0 reference angles of those points are
-  *   known.
-  }
-  angf_pnt_vect (meas1_p^, p1, v1);    {make start point and unit vector from point 1}
-  angf_pnt_vect (meas2_p^, p2, v2);    {make start point and unit vector from point 2}
-
-  simul[1, 1] := v1.x;                 {fill in simultaneous equation coefficients}
-  simul[1, 2] := -v2.x;
-  simul[1, 3] := p2.x - p1.x;
-  simul[2, 1] := v1.y;
-  simul[2, 2] := -v2.y;
-  simul[2, 3] := p2.y - p1.y;
-  math_simul (                         {solve the simultaneous equations}
-    2,                                 {number of equations (and unknowns)}
-    simul,                             {array of coefficients}
-    smres,                             {returned results}
-    valid);                            {TRUE when results are valid}
-  if not valid then goto not_angf;
-
-  pnt.coor.x := p1.x + smres[1]*v1.x;  {make final absolute coor of this point}
-  pnt.coor.y := p1.y + smres[1]*v1.y;
-  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  resolve_xy_2ang (                    {resolve loc from 2 angles from other points}
+    ptc,                               {library use state}
+    pnt,                               {the point to resolve location of}
+    meas1_p^, meas2_p^);               {angle measurements from known points}
+  if not (pntcalc_pntflg_xy_k in pnt.flags) {unable to resolve location ?}
+    then goto not_angf;
 
   if pntcalc_gflg_showcalc_k in ptc.flags then begin
     write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
@@ -379,13 +429,13 @@ not_angf:                              {skip to here if can't find point from an
     end;                               {back for next distance measurement in list}
   if meas1_p = nil then goto not_pntang; {no angle/distance measurements available ?}
 
-  pnt_p := meas1_p^.distxy_pnt_p;      {get pointer to the remote point}
-  dist := meas1_p^.distxy_dist;        {distance between the points}
-  ang := math_angle_math (meas2_p^.angf_ang); {angle from other point to here, math type}
-
-  pnt.coor.x := pnt_p^.coor.x + cos(ang)*dist; {make coordinate of this point}
-  pnt.coor.y := pnt_p^.coor.y + sin(ang)*dist;
-  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  resolve_xy_distang (                 {resolve loc from distance and angle}
+    ptc,                               {library use state}
+    pnt,                               {the point to resolve location of}
+    meas1_p^,                          {distance measurement}
+    meas2_p^);                         {angle measurement}
+  if not (pntcalc_pntflg_xy_k in pnt.flags) {unable to resolve location ?}
+    then goto not_pntang;
 
   if pntcalc_gflg_showcalc_k in ptc.flags then begin
     write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
