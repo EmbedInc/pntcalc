@@ -1,8 +1,43 @@
                               PNTCALC System
-                               19 April 2021
+                               27 June 2021
 
 The PNTCALC system calculates absolute coordinates of points from various
 relative distance and angle measurements.  Such relative measurements
 result from the use of a tape measure and a transit, for example.
 
---- Need more detail here. ---
+The following resources from the PNTCALC subsystem are intended for
+external use.  Pathnames are relative to the Embedinc software
+installation directory:
+
+  doc/pntcalc.txt
+
+    This file.  High level description of the PNTCALC subsystem
+
+  doc/pntcalc_file.txt
+
+    Describes the PNTCALC file input format.
+
+  com/test_pntcalc.exe
+
+    Test program that reads a PNTCALC file and performs operations on the
+    data.  This is mostly intended to aid development and testing of
+    PNTCALC routines.
+
+  com/survey_sl.exe
+
+    Program that reads a PNTCALC file and creates a slide making program
+    (slide.exe) include file with the resolved points.  See the SURVEY_SL
+    doc file for details.
+
+  doc/survey_sl.txt
+
+    Documentation file for the SURVEY_SL program.
+
+  lib/pntcalc.lib
+
+    Linkable library.
+
+  lib/pntcalc.ins.pas, lib/pntcalc.h
+
+    Include files that define exported symbols in the linkable library, in
+    Pascal and C.

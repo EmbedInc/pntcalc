@@ -1,5 +1,5 @@
                            PNTCALC File Format
-                              22 April 20212
+                              27 June 20212
 
 This document describes the PNTCALC file format.  For an overview of the
 PNTCALC mechanism, see the PNTCALC documentation file.
@@ -67,17 +67,17 @@ Syntax
       being 2-36.
 
       The "<+->" part can be either "+", "-", or be omitted.  This
-      indicates       the sign of the value.  Positive is implied when the
-      sign is omitted.
+      indicates the sign of the value.  Positive is implied when the sign
+      is omitted.
 
       DIGITS is the digits of the number in the specified radix.  The
-      normal       digits 0-9 are used for digit values 0 to 9.  The
-      letters A-Z or a-z are used for digit values 10 to 35.  Only digits
-      with values less than the radix are allowed.  Leading zeros are
-      allowed.  A minimum of one digit is required.
+      normal digits 0-9 are used for digit values 0 to 9.  The letters A-Z
+      or a-z are used for digit values 10 to 35.  Only digits with values
+      less than the radix are allowed.  Leading zeros are allowed.  A
+      minimum of one digit is required.
 
       The "<radix>#" part may be omitted, in which case the radix is
-      implied       to be 10 (decimal).
+      implied to be 10 (decimal).
 
       For example, the following integer parameters all have the decimal
       value of 249:
@@ -159,7 +159,7 @@ Commands
       location closest to the NEAR point will be chosen.
 
       For example, if points A and B are known, and the distances to point
-      C are known, then there acan be two possible locations for point C.
+      C are known, then there can be two possible locations for point C.
       Without NEAR specified, the location of point C will be considered
       undefined.  With NEAR, the location of point C will be set to the
       one possibility nearest to the NEAR point.
