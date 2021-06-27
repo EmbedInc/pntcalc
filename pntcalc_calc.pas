@@ -37,6 +37,9 @@ define pntcalc_calc_points;
 *
 *       2 - A ANGT measurement with REF flag set, to a point with its XY
 *           coordinate known.
+*
+*     If the reference angle is not explicitly set and there are no measurements
+*     from which it can be derived, then the default of 0 is used.
 }
 procedure resolve_ang0 (               {try to resolve 0 reference angle}
   in out  ptc: pntcalc_t;              {library use state}
@@ -47,13 +50,13 @@ var
   meas_p: pntcalc_meas_p_t;            {pointer to current measurement}
   dx, dy: real;
   ang: real;
+  def: boolean;                        {default can be used}
 
 label
   next_meas, make_ref;
 
 begin
-  if not (pntcalc_pntflg_xy_k in pnt.flags) {XY of this point not known ?}
-    then return;
+  def := true;                         {init to default may be used}
 
   meas_p := pnt.meas_p;                {init to first measurement in list}
   while meas_p <> nil do begin         {scan the list of measurements}
@@ -61,12 +64,24 @@ begin
       then goto next_meas;
     if not meas_p^.angt_ref            {not an angle reference measurement ?}
       then goto next_meas;
+    def := false;                      {can't use default ref angle}
     if not (pntcalc_pntflg_xy_k in meas_p^.angt_pnt_p^.flags)
       then goto next_meas;             {other point XY not known ?}
     goto make_ref;                     {this meas works, go make ref angle}
 next_meas:                             {go on to next measurement in the list}
     meas_p := meas_p^.next_p;          {to next measurement for this point}
     end;                               {back to check out this new measurement}
+{
+*   No suitable measurements are available.
+}
+  if def then begin                    {use default reference angle ?}
+    pnt.ang0 := 0.0;                   {set reference angle to the default}
+    pnt.flags := pnt.flags + [pntcalc_pntflg_ang0_k]; {indicate ref angle set}
+    if pntcalc_gflg_showcalc_k in ptc.flags then begin
+      writeln ('  Point ', pnt.name.str:pnt.name.len, ' ref angle set to default');
+      end;
+    end;
+
   return;                              {didn't find a suitable measurement}
 {
 *   MEAS_P points to a reference angle measurement.  The XY coordinates of this
@@ -74,6 +89,8 @@ next_meas:                             {go on to next measurement in the list}
 *   angle.
 }
 make_ref:
+  if not (pntcalc_pntflg_xy_k in pnt.flags) {XY of this point not known ?}
+    then return;
   dx := meas_p^.angt_pnt_p^.coor.x - pnt.coor.x; {make delta to remote point}
   dy := meas_p^.angt_pnt_p^.coor.y - pnt.coor.y;
   ang := arctan2 (dy, dx);             {make the angle to the remote point}
