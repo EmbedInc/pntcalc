@@ -166,14 +166,14 @@ begin
 {
 ********************************************************************************
 *
-*   Local subroutine RESOLVE_XY_DISTANG (PTC, PNT, MDIST, MANG)
+*   Local subroutine RESOLVE_XY_DISTANGF (PTC, PNT, MDIST, MANG)
 *
 *   Resolve the location of point PNT from an angle and distance from another
 *   point.  MDIST is the distance measurement from the other point, and MANG
 *   the angle measurement from that point.  The XY location and reference angle
 *   of the other point must be known.
 }
-procedure resolve_xy_distang (         {resolve loc from dist and ang from other point}
+procedure resolve_xy_distangf (        {resolve loc from dist and ang from other point}
   in out  ptc: pntcalc_t;              {library use state}
   in out  pnt: pntcalc_point_t;        {the point to resolve location of}
   in      mdist: pntcalc_meas_t;       {distance measurement to remote point}
@@ -194,6 +194,39 @@ begin
 
   pnt.coor.x := p.x + cos(ang)*dist;   {make coordinate of this point}
   pnt.coor.y := p.y + sin(ang)*dist;
+  pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
+  end;
+{
+********************************************************************************
+*
+*   Local subroutine RESOLVE_XY_DISTANGT (PTC, PNT, MDIST, MANG)
+*
+*   Resolve the location of point PNT from an angle and distance to another
+*   point.  MDIST is the distance measurement to the other point, and MANG the
+*   angle measurement to that point.  The reference angle of this point, and the
+*   absolute coordinate of the other point must be known.
+}
+procedure resolve_xy_distangt (        {resolve loc from dist and ang from other point}
+  in out  ptc: pntcalc_t;              {library use state}
+  in out  pnt: pntcalc_point_t;        {the point to resolve location of}
+  in      mdist: pntcalc_meas_t;       {distance measurement to remote point}
+  in      mang: pntcalc_meas_t);       {angle measurement to remote point}
+  val_param; internal;
+
+var
+  p: vect_2d_t;                        {point angle and distance measured to}
+  dist: real;                          {distance to remote point}
+  ang: real;                           {angle measured to remote point}
+
+begin
+  p.x := mdist.distxy_pnt_p^.coor.x;   {get location measurements are to}
+  p.y := mdist.distxy_pnt_p^.coor.y;
+  dist := mdist.distxy_dist;           {distance to the remote point}
+  ang := math_angle_math (             {angle from here to other point, math type}
+    mang.angt_ang + pnt.ang0);
+
+  pnt.coor.x := p.x - cos(ang)*dist;   {make coordinate of this point}
+  pnt.coor.y := p.y - sin(ang)*dist;
   pnt.flags := pnt.flags + [pntcalc_pntflg_xy_k]; {indicate XY coor now known}
   end;
 {
@@ -285,7 +318,7 @@ begin
 *         there are more than two points, the two with the angles least
 *         co-linear are chosen.
 *
-*     2 - An angle and distance are known from another point with known
+*     2 - An angle and distance are known to/from another point with known
 *         location.
 *
 *     3 - The distance is known from two or more points with known location, and
@@ -308,6 +341,8 @@ type
 
 var
   meas_p: pntcalc_meas_p_t;            {pointer to current measurement}
+  angt: meas_list_t;                   {list of angles to other known points}
+  nangt: sys_int_machine_t;            {number of entries in ANGT list}
   angf: meas_list_t;                   {list of angles from other known points}
   nangf: sys_int_machine_t;            {number of entries in ANGF list}
   disp: meas_list_t;                   {list of distances to other known points}
@@ -317,12 +352,15 @@ var
   meas1_p, meas2_p: pntcalc_meas_p_t;  {pointers to measurements for resolving location}
 
 label
-  next_meas, not_angf, not_pntang, not_dist2;
+  next_meas, not_angf, not_pntangf, not_pntangt, not_dist2;
 
 begin
 {
 *   Build the lists according to the measurements related to this point.  The
 *   following lists are created:
+*
+*     ANGT  -  Measurements of angles to other points.  The XY locations of the
+*       other points are known.
 *
 *     ANGF  -  Measurements of angles from other points.  The XY locations and
 *       the 0 reference angles of the other points are known.
@@ -330,6 +368,7 @@ begin
 *     DISP  -  Measurements of distances to other points.  The XY locations of
 *       the other points is known.
 }
+  nangt := 0;                          {init number of angles to known points}
   nangf := 0;                          {init number of angles from known points}
   ndisp := 0;                          {init number of distances to known points}
 
@@ -338,6 +377,13 @@ begin
     case meas_p^.measty of             {what kind of measurement is this one ?}
 
 pntcalc_measty_angt_k: begin           {angle from here to another point}
+  pnt_p := meas_p^.angt_pnt_p;         {get pointer to the other point}
+  if not (pntcalc_pntflg_xy_k in pnt_p^.flags) {location of other point not known ?}
+    then goto next_meas;
+  if nangt >= meas_list_max            {no room in list ?}
+    then goto next_meas;
+  nangt := nangt + 1;                  {count one more entry in the list}
+  angt[nangt] := meas_p;               {save this measurement in the list}
   end;
 
 pntcalc_measty_angf_k: begin           {angle to here from another point}
@@ -367,7 +413,7 @@ next_meas:                             {done with this measurement, on to next}
     meas_p := meas_p^.next_p;          {to next measurement in the list}
     end;                               {back to check out this new measurement}
 {
-*   The ANGF and DISP lists have been set.
+*   The ANGT, ANGF, and DISP lists have been set.
 *
 *   Resolve the location of this point from two or more angles from other
 *   points.
@@ -429,15 +475,15 @@ not_angf:                              {skip to here if can't find point from an
         end;                           {end of found angle for dist measurement}
       end;                             {back for next angle to check against dist pnt}
     end;                               {back for next distance measurement in list}
-  if meas1_p = nil then goto not_pntang; {no angle/distance measurements available ?}
+  if meas1_p = nil then goto not_pntangf; {no angle/distance measurements available ?}
 
-  resolve_xy_distang (                 {resolve loc from distance and angle}
+  resolve_xy_distangf (                {resolve loc from distance and angle}
     ptc,                               {library use state}
     pnt,                               {the point to resolve location of}
     meas1_p^,                          {distance measurement}
     meas2_p^);                         {angle measurement}
   if not (pntcalc_pntflg_xy_k in pnt.flags) {unable to resolve location ?}
-    then goto not_pntang;
+    then goto not_pntangf;
 
   if pntcalc_gflg_showcalc_k in ptc.flags then begin
     write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
@@ -447,7 +493,57 @@ not_angf:                              {skip to here if can't find point from an
     end;
   return;
 
-not_pntang:                            {no distance with angle measurements available}
+not_pntangf:                           {no distance and angle from another point}
+{
+*   Resolve the location of this point from an angle and distance to another
+*   point.
+*
+*   After scanning the available choices, MEAS1_P will point to the distance
+*   measurement, and MEAS2_P to the angle measurement.  If there are multiple
+*   choices, the one with the shortest distance will be used.
+}
+  if not (pntcalc_pntflg_ang0_k in pnt.flags) {ref angle of this point not known ?}
+    then goto not_pntangt;
+
+  meas2_p := nil;                      {init to no suitable angle measurement}
+  for ii := 1 to nangt do begin        {scan list of angles to other points}
+    pnt_p := angt[ii]^.angt_pnt_p;     {get pointer to the point the angle is to}
+    for jj := 1 to ndisp do begin      {scan list of distances to other points}
+      if disp[jj]^.distxy_pnt_p <> pnt_p {not to the same point the angle is to ?}
+        then next;
+      if meas2_p = nil
+        then begin                     {this is first angle/dist pair found}
+          meas2_p := angt[ii];         {save pointers to the measurements}
+          meas1_p := disp[jj];
+          end
+        else begin                     {previous angle/dist pair was found}
+          if disp[jj]^.distxy_dist < meas1_p^.distxy_dist then begin {closer ?}
+            meas2_p := angt[ii];       {switch to new closer angle/dist measurements}
+            meas1_p := disp[jj];
+            end;
+          end
+        ;
+      end;                             {back for next dist to check against this angle}
+    end;                               {back for next angle measurement in list}
+  if meas2_p = nil then goto not_pntangt; {no angle/distance measurements available ?}
+
+  resolve_xy_distangt (                {resolve loc from distance and angle}
+    ptc,                               {library use state}
+    pnt,                               {the point to resolve location of}
+    meas1_p^,                          {distance measurement to other point}
+    meas2_p^);                         {angle measurement to other point}
+  if not (pntcalc_pntflg_xy_k in pnt.flags) {unable to resolve location ?}
+    then goto not_pntangt;
+
+  if pntcalc_gflg_showcalc_k in ptc.flags then begin
+    write ('  Point ', pnt.name.str:pnt.name.len, ' at ');
+    pntcalc_show_coor (pnt.coor, pntcalc_pntflg_coor_k in pnt.flags);
+    writeln (' by angle/dist to point ',
+      meas1_p^.distxy_pnt_p^.name.str:meas1_p^.distxy_pnt_p^.name.len);
+    end;
+  return;
+
+not_pntangt:                           {no distance and angle from another point}
 {
 *   Resolve the location of this point from distances from two other points.
 *   The NEAR location of this point must be filled in.  Distances from two other
